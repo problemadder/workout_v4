@@ -485,15 +485,6 @@ export function Targets({ targets, exercises, workouts, onAddTarget, onEditTarge
                           )}
                         </div>
                       </div>
-                      
-                      {/* Progress milestones */}
-                      <div className="flex justify-between text-xs text-solarized-base01">
-                        <span>0</span>
-                        <span className={progress.percentage >= 25 ? progress.statusColor : 'text-solarized-base01'}>25%</span>
-                        <span className={progress.percentage >= 50 ? progress.statusColor : 'text-solarized-base01'}>50%</span>
-                        <span className={progress.percentage >= 75 ? progress.statusColor : 'text-solarized-base01'}>75%</span>
-                        <span className={progress.percentage >= 100 ? progress.statusColor : 'text-solarized-base01'}>100%</span>
-                      </div>
                     </div>
 
                     {/* Status Messages */}
