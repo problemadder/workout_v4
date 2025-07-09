@@ -405,6 +405,9 @@ export function Targets({ targets, exercises, workouts, onAddTarget, onEditTarge
                         <span className="text-xs px-2 py-1 rounded-full bg-solarized-blue/10 text-solarized-blue border border-solarized-blue/20">
                           {target.period}
                         </span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-solarized-green/10 text-solarized-green border border-solarized-green/20">
+                          {target.type}
+                        </span>
                         {target.category && (
                           <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryStyle(target.category)}`}>
                             {categories.find(c => c.value === target.category)?.label}
