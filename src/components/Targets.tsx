@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Target, TrendingUp, Calendar, CheckCircle, Clock, Award } from 'lucide-react';
+import { Plus, Edit2, Trash2, Target, Award } from 'lucide-react';
 import { WorkoutTarget, Exercise, Workout } from '../types';
 
 interface TargetsProps {
@@ -400,11 +400,8 @@ export function Targets({ targets, exercises, workouts, onAddTarget, onEditTarge
                         )}
                       </div>
                       
-                      {/* Status Badge */}
+                      {/* Info Badges */}
                       <div className="flex items-center gap-2 mb-3">
-                        <span className={`text-sm font-medium ${progress.statusColor} flex items-center gap-1`}>
-                          {progress.statusIcon} {getStatusText(progress.status)}
-                        </span>
                         <span className="text-xs px-2 py-1 rounded-full bg-solarized-blue/10 text-solarized-blue border border-solarized-blue/20">
                           {target.period}
                         </span>
@@ -458,18 +455,6 @@ export function Targets({ targets, exercises, workouts, onAddTarget, onEditTarge
                           <div className="text-xs text-solarized-base01">Complete</div>
                         </div>
                       </div>
-                      
-                      {/* Days Remaining */}
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 text-solarized-base01">
-                          <Clock size={14} />
-                          <span className="text-sm font-medium">
-                            {progress.daysRemaining === 0 ? 'Last day!' : 
-                             progress.daysRemaining === 1 ? '1 day left' : 
-                             `${progress.daysRemaining} days left`}
-                          </span>
-                        </div>
-                      </div>
                     </div>
 
                     {/* Visual Progress Bar */}
@@ -485,38 +470,6 @@ export function Targets({ targets, exercises, workouts, onAddTarget, onEditTarge
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Status Messages */}
-                    <div className="pt-2">
-                      {progress.isExceeded && (
-                        <div className="bg-solarized-violet/10 border border-solarized-violet/20 rounded-lg p-3">
-                          <p className="text-sm text-solarized-violet font-medium flex items-center gap-2">
-                            🎉 Outstanding! You've exceeded your target by {progress.currentValue - target.targetValue} {target.type}!
-                          </p>
-                        </div>
-                      )}
-                      {progress.isCompleted && !progress.isExceeded && (
-                        <div className="bg-solarized-green/10 border border-solarized-green/20 rounded-lg p-3">
-                          <p className="text-sm text-solarized-green font-medium flex items-center gap-2">
-                            ✅ Congratulations! You've reached your target!
-                          </p>
-                        </div>
-                      )}
-                      {!progress.isCompleted && progress.status === 'on-track' && (
-                        <div className="bg-solarized-blue/10 border border-solarized-blue/20 rounded-lg p-3">
-                          <p className="text-sm text-solarized-blue font-medium flex items-center gap-2">
-                            🔵 Great progress! You're on track to reach your goal.
-                          </p>
-                        </div>
-                      )}
-                      {progress.status === 'moderate' && (
-                        <div className="bg-solarized-yellow/10 border border-solarized-yellow/20 rounded-lg p-3">
-                          <p className="text-sm text-solarized-yellow font-medium flex items-center gap-2">
-                            🟡 You're making progress! Keep up the momentum.
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
