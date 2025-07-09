@@ -38,6 +38,18 @@ export interface WorkoutStats {
   longestStreak: number;
 }
 
+export interface WorkoutTarget {
+  id: string;
+  name: string;
+  type: 'sets' | 'reps';
+  category?: Exercise['category'];
+  exerciseId?: string;
+  targetValue: number;
+  period: 'daily' | 'weekly' | 'monthly';
+  isActive: boolean;
+  createdAt: Date;
+}
+
 export interface MaxRepRecord {
   exerciseId: string;
   setPosition: number; // 1st set, 2nd set, etc.
