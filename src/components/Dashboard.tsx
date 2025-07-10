@@ -95,15 +95,6 @@ export function Dashboard({ workouts, stats, onStartWorkout }: DashboardProps) {
 
   return (
     <div className="bg-solarized-base3 min-h-screen">
-      {/* iOS-style Header */}
-      <div className="bg-solarized-base3 pt-safe-top">
-        <div className="px-4 py-3 border-b border-solarized-base2">
-          <h1 className="text-lg font-semibold text-solarized-base02 text-center">
-            Dashboard
-          </h1>
-        </div>
-      </div>
-
       <div className="px-4 pb-24 space-y-3 pt-3">
         {/* Compact Training Percentages */}
         <div className="grid grid-cols-3 gap-2">
