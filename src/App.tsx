@@ -280,6 +280,16 @@ function App() {
     setWorkouts([...workouts, ...uniqueNewWorkouts]);
   };
 
+  const handleImportTargets = (newTargets: WorkoutTarget[]) => {
+    // Merge targets, avoiding duplicates by name
+    const existingNames = new Set(targets.map(t => t.name.toLowerCase()));
+    const uniqueNewTargets = newTargets.filter(t => 
+      !existingNames.has(t.name.toLowerCase())
+    );
+    
+    setTargets([...targets, ...uniqueNewTargets]);
+  };
+
   return (
     <div className="min-h-screen bg-solarized-base3">
       <main className="relative">
@@ -347,8 +357,10 @@ function App() {
           <ImportExport
             exercises={exercises}
             workouts={workouts}
+            targets={targets}
             onImportExercises={handleImportExercises}
             onImportWorkouts={handleImportWorkouts}
+            onImportTargets={handleImportTargets}
           />
         )}
       </main>

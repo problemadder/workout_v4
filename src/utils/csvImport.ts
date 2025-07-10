@@ -1,4 +1,5 @@
 import { Exercise, Workout, WorkoutSet } from '../types';
+import { WorkoutTarget } from '../types';
 
 export interface ExerciseCSVRow {
   name: string;
@@ -14,6 +15,16 @@ export interface WorkoutCSVRow {
   reps: string;
   setNotes?: string;
   workoutNotes?: string;
+}
+
+export interface TargetCSVRow {
+  name: string;
+  type: 'sets' | 'reps';
+  category?: Exercise['category'];
+  exerciseId?: string;
+  targetValue: number;
+  period: 'weekly' | 'monthly' | 'yearly';
+  isActive: boolean;
 }
 
 // Improved CSV parsing function
@@ -383,6 +394,138 @@ export function generateWorkoutCSVTemplate(): string {
     ['2024-01-15', 'Squats', 'legs', '2', '18', 'Legs burning', 'Great morning workout'],
     ['2024-01-16', 'Plank', 'abs', '1', '30', 'Held for 30 seconds', 'Quick abs session'],
     ['2024-01-16', 'Plank', 'abs', '2', '25', 'Shorter hold', 'Quick abs session']
+  ];
+  
+  const csvContent = [
+    headers.join(','),
+    ...examples.map(row => row.map(field => `"${field}"`).join(','))
+  ].join('\n');
+  
+  return csvContent;
+}
+
+export function parseTargetsCSV(csvContent: string, exercises: Exercise[]): TargetCSVRow[] {
+  const lines = csvContent.trim().split('\n');
+  if (lines.length < 2) throw new Error('CSV must have at least a header row and one data row');
+  
+  const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+  const targets: TargetCSVRow[] = [];
+  
+  // Find header indices
+  const nameIndex = headers.findIndex(h => h === 'name' || h.includes('name'));
+  const typeIndex = headers.findIndex(h => h === 'type' || h.includes('type'));
+  const categoryIndex = headers.findIndex(h => h === 'category' || h.includes('category'));
+  const exerciseNameIndex = headers.findIndex(h => 
+    h === 'exercisename' || 
+    h === 'exercise_name' || 
+    h === 'exercise' || 
+    (h.includes('exercise') && h.includes('name'))
+  );
+  const targetValueIndex = headers.findIndex(h => 
+    h === 'targetvalue' || 
+    h === 'target_value' || 
+    h === 'value' || 
+    (h.includes('target') && h.includes('value'))
+  );
+  const periodIndex = headers.findIndex(h => h === 'period' || h.includes('period'));
+  const isActiveIndex = headers.findIndex(h => 
+    h === 'isactive' || 
+    h === 'is_active' || 
+    h === 'active' || 
+    h.includes('active')
+  );
+  
+  if (nameIndex === -1) throw new Error('CSV must have a "name" column');
+  if (typeIndex === -1) throw new Error('CSV must have a "type" column');
+  if (targetValueIndex === -1) throw new Error('CSV must have a "targetValue" column');
+  if (periodIndex === -1) throw new Error('CSV must have a "period" column');
+  
+  const exerciseMap = new Map(exercises.map(ex => [ex.name.toLowerCase(), ex]));
+  const validCategories: Exercise['category'][] = ['abs', 'legs', 'arms', 'back', 'shoulders', 'chest', 'cardio', 'full-body'];
+  const validTypes: ('sets' | 'reps')[] = ['sets', 'reps'];
+  const validPeriods: ('weekly' | 'monthly' | 'yearly')[] = ['weekly', 'monthly', 'yearly'];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    
+    const values = parseCSVLine(line);
+    
+    const name = values[nameIndex]?.trim();
+    if (!name) continue;
+    
+    const typeRaw = values[typeIndex]?.trim().toLowerCase();
+    if (!validTypes.includes(typeRaw as any)) {
+      console.warn(`Invalid type "${typeRaw}" on line ${i + 1}, skipping`);
+      continue;
+    }
+    const type = typeRaw as 'sets' | 'reps';
+    
+    const targetValueRaw = values[targetValueIndex]?.trim();
+    const targetValue = parseInt(targetValueRaw);
+    if (isNaN(targetValue) || targetValue <= 0) {
+      console.warn(`Invalid target value "${targetValueRaw}" on line ${i + 1}, skipping`);
+      continue;
+    }
+    
+    const periodRaw = values[periodIndex]?.trim().toLowerCase();
+    if (!validPeriods.includes(periodRaw as any)) {
+      console.warn(`Invalid period "${periodRaw}" on line ${i + 1}, skipping`);
+      continue;
+    }
+    const period = periodRaw as 'weekly' | 'monthly' | 'yearly';
+    
+    // Optional fields
+    let category: Exercise['category'] | undefined;
+    if (categoryIndex >= 0) {
+      const categoryRaw = values[categoryIndex]?.trim().toLowerCase();
+      if (validCategories.includes(categoryRaw as Exercise['category'])) {
+        category = categoryRaw as Exercise['category'];
+      }
+    }
+    
+    let exerciseId: string | undefined;
+    if (exerciseNameIndex >= 0) {
+      const exerciseName = values[exerciseNameIndex]?.trim();
+      if (exerciseName) {
+        const exercise = exerciseMap.get(exerciseName.toLowerCase());
+        if (exercise) {
+          exerciseId = exercise.id;
+          // If no category specified but exercise found, use exercise category
+          if (!category) {
+            category = exercise.category;
+          }
+        }
+      }
+    }
+    
+    let isActive = true; // default
+    if (isActiveIndex >= 0) {
+      const isActiveRaw = values[isActiveIndex]?.trim().toLowerCase();
+      isActive = isActiveRaw === 'true' || isActiveRaw === '1' || isActiveRaw === 'yes';
+    }
+    
+    targets.push({
+      name,
+      type,
+      category,
+      exerciseId,
+      targetValue,
+      period,
+      isActive
+    });
+  }
+  
+  return targets;
+}
+
+export function generateTargetCSVTemplate(): string {
+  const headers = ['name', 'type', 'category', 'exerciseName', 'targetValue', 'period', 'isActive'];
+  const examples = [
+    ['Weekly Push-ups Goal', 'sets', 'arms', 'Push-ups', '21', 'weekly', 'true'],
+    ['Monthly Abs Challenge', 'reps', 'abs', 'Plank', '500', 'monthly', 'true'],
+    ['Yearly Cardio Goal', 'sets', 'cardio', '', '365', 'yearly', 'true'],
+    ['Leg Day Target', 'sets', 'legs', '', '50', 'monthly', 'false']
   ];
   
   const csvContent = [
