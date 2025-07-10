@@ -66,7 +66,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
           type: 'success',
           message: `Successfully imported ${newExercises.length} exercises`
         });
-      } else {
+      } else if (type === 'workouts') {
         const { workouts: parsedWorkouts, newExercises } = parseWorkoutsCSV(content, exercises);
         
         if (parsedWorkouts.length === 0) {
