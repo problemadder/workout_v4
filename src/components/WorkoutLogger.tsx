@@ -339,7 +339,7 @@ export function WorkoutLogger({
               className="bg-solarized-yellow text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer text-sm font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-yellow/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 min-h-12"
             >
               <Star size={18} />
-              Save as Template
+              Save Template
             </button>
           )}
         </div>
