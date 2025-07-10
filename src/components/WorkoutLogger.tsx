@@ -44,7 +44,7 @@ export function WorkoutLogger({
     { value: 'full-body', label: 'Full Body', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
     { value: 'legs', label: 'Legs', color: 'bg-green-100 text-green-800 border-green-200' },
     { value: 'shoulders', label: 'Shoulders', color: 'bg-gray-100 text-gray-800 border-gray-200' }
-  ];
+  ].sort((a, b) => a.label.localeCompare(b.label));
 
   // Sort exercises alphabetically
   const sortedExercises = [...exercises].sort((a, b) => a.name.localeCompare(b.name));
@@ -77,12 +77,12 @@ export function WorkoutLogger({
     
     const newSets: Omit<WorkoutSet, 'id'>[] = [];
     for (let i = 0; i < numberOfSets; i++) {
-      newSets.push({ exerciseId: selectedExerciseId, reps: 0 }); // Start with 0 reps to show placeholder
+      newSets.push({ exerciseId: selectedExerciseId, reps: 0 });
     }
     
     setSets([...sets, ...newSets]);
     setShowAddExercise(false);
-    setNumberOfSets(3); // Reset to default
+    setNumberOfSets(3);
   };
 
   const addSingleSet = (exerciseId?: string) => {
@@ -91,7 +91,7 @@ export function WorkoutLogger({
         ? sortedExercises.find(e => e.category === selectedCategory)?.id 
         : sortedExercises[0]?.id) || '';
     
-    setSets([...sets, { exerciseId: defaultExerciseId, reps: 0 }]); // Start with 0 reps to show placeholder
+    setSets([...sets, { exerciseId: defaultExerciseId, reps: 0 }]);
   };
 
   const updateSet = (index: number, field: keyof Omit<WorkoutSet, 'id'>, value: any) => {
@@ -138,7 +138,7 @@ export function WorkoutLogger({
       for (let i = 0; i < templateExercise.sets; i++) {
         templateSets.push({
           exerciseId: templateExercise.exerciseId,
-          reps: 0 // Start with 0 reps to show placeholder
+          reps: 0
         });
       }
     });
@@ -210,32 +210,6 @@ export function WorkoutLogger({
     return categories.find(c => c.value === category)?.color || 'bg-solarized-base1/10 text-solarized-base01 border-solarized-base1/20';
   };
 
-  const getCategoryBackgroundStyle = (category: Exercise['category']) => {
-    const categoryConfig = categories.find(c => c.value === category);
-    if (!categoryConfig) return 'bg-solarized-base2 border-solarized-base1';
-    
-    switch (category) {
-      case 'abs':
-        return 'bg-yellow-100 border-yellow-200';
-      case 'legs':
-        return 'bg-green-100 border-green-200';
-      case 'arms':
-        return 'bg-blue-100 border-blue-200';
-      case 'back':
-        return 'bg-purple-100 border-purple-200';
-      case 'shoulders':
-        return 'bg-gray-100 border-gray-200';
-      case 'chest':
-        return 'bg-[#6F826A] border-[#6F826A]';
-      case 'cardio':
-        return 'bg-[#F6F0F0] border-[#F6F0F0]';
-      case 'full-body':
-        return 'bg-[#5C7285] border-[#5C7285]';
-      default:
-        return 'bg-solarized-base2 border-solarized-base1';
-    }
-  };
-
   const getPlaceholderText = (exerciseId: string, setPosition: number) => {
     const stats = getStatsForSet(exerciseId, setPosition);
     const parts = [];
@@ -296,7 +270,7 @@ export function WorkoutLogger({
 
   if (sortedExercises.length === 0) {
     return (
-      <div className="p-6 pb-24 bg-solarized-base3 min-h-screen">
+      <div className="p-4 pb-24 bg-solarized-base3 min-h-screen">
         <div className="text-center py-12">
           <p className="text-solarized-base01 mb-4">No exercises available</p>
           <p className="text-sm text-solarized-base1">Add some exercises first to start logging workouts</p>
@@ -306,60 +280,60 @@ export function WorkoutLogger({
   }
 
   return (
-    <div className="p-6 pb-32 space-y-6 bg-solarized-base3 min-h-screen">
-      {/* Workout Header */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-solarized-base02">
+    <div className="bg-solarized-base3 min-h-screen">
+      {/* iOS-style Header */}
+      <div className="bg-solarized-base3 pt-safe-top">
+        <div className="px-4 py-3 border-b border-solarized-base2">
+          <h1 className="text-lg font-semibold text-solarized-base02 text-center">
             {formatDate(new Date())}
-          </h2>
-        </div>
-        
-        {todaysWorkout && (
-          <div className="bg-solarized-green/10 p-3 rounded-lg mb-4 border border-solarized-green/20">
-            <p className="text-sm text-solarized-base02">
-              You've already logged a workout today. You can continue adding sets or update your existing workout.
+          </h1>
+          {todaysWorkout && (
+            <p className="text-xs text-solarized-green text-center mt-1">
+              Workout already logged today
             </p>
-          </div>
-        )}
+          )}
+        </div>
+      </div>
 
-        {/* Template and Save Actions */}
-        <div className="flex gap-3 flex-wrap">
+      <div className="px-4 pb-24 space-y-3">
+        {/* Compact Action Buttons */}
+        <div className="flex gap-2 py-3">
           <button
             onClick={() => setShowTemplates(!showTemplates)}
-            className="bg-solarized-violet text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer text-sm font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-violet/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 min-h-12"
+            className="flex-1 bg-solarized-violet text-solarized-base3 py-2.5 px-3 rounded-lg text-sm font-medium hover:bg-solarized-violet/90 transition-colors flex items-center justify-center gap-1.5"
           >
-            <BookOpen size={18} />
-            Use Template
+            <BookOpen size={16} />
+            Templates
           </button>
           
           {sets.length > 0 && onAddTemplate && (
             <button
               onClick={() => setShowSaveTemplate(!showSaveTemplate)}
-              className="bg-solarized-yellow text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer text-sm font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-yellow/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 min-h-12"
+              className="flex-1 bg-solarized-yellow text-solarized-base3 py-2.5 px-3 rounded-lg text-sm font-medium hover:bg-solarized-yellow/90 transition-colors flex items-center justify-center gap-1.5"
             >
-              <Star size={18} />
+              <Star size={16} />
               Save Template
             </button>
           )}
         </div>
 
+        {/* Template Selection - iOS Card Style */}
         {showTemplates && (
-          <div className="mt-4 p-4 bg-solarized-base1/10 rounded-lg border border-solarized-base1/20">
-            <h4 className="font-medium text-solarized-base02 mb-3">Choose a template:</h4>
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <h4 className="font-medium text-solarized-base02 mb-2 text-sm">Choose Template</h4>
             {templates.length === 0 ? (
-              <p className="text-solarized-base01 text-sm">No templates available. Create one in the Templates tab.</p>
+              <p className="text-solarized-base01 text-xs py-2">No templates available</p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {templates.map(template => (
                   <button
                     key={template.id}
                     onClick={() => useTemplate(template)}
-                    className="w-full text-left p-3 bg-solarized-base3 rounded-lg hover:bg-solarized-violet/10 border border-solarized-base1 hover:border-solarized-violet/20 transition-colors"
+                    className="w-full text-left p-2.5 bg-solarized-base3 rounded-lg hover:bg-solarized-violet/10 border border-solarized-base1 hover:border-solarized-violet/20 transition-colors"
                   >
-                    <div className="font-medium text-solarized-base02">{template.name}</div>
-                    <div className="text-sm text-solarized-base01">
-                      {template.exercises.length} exercises, {template.exercises.reduce((total, ex) => total + ex.sets, 0)} total sets
+                    <div className="font-medium text-solarized-base02 text-sm">{template.name}</div>
+                    <div className="text-xs text-solarized-base01">
+                      {template.exercises.length} exercises • {template.exercises.reduce((total, ex) => total + ex.sets, 0)} sets
                     </div>
                   </button>
                 ))}
@@ -368,22 +342,23 @@ export function WorkoutLogger({
           </div>
         )}
 
+        {/* Save Template - iOS Card Style */}
         {showSaveTemplate && (
-          <div className="mt-4 p-4 bg-solarized-yellow/10 rounded-lg border border-solarized-yellow/20">
-            <h4 className="font-medium text-solarized-base02 mb-3">Save current workout as template:</h4>
-            <div className="space-y-3">
+          <div className="bg-solarized-yellow/10 rounded-xl p-3 border border-solarized-yellow/20">
+            <h4 className="font-medium text-solarized-base02 mb-2 text-sm">Save as Template</h4>
+            <div className="space-y-2">
               <input
                 type="text"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="Template name (e.g., Today's Workout)"
-                className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-yellow focus:border-transparent bg-solarized-base3 text-solarized-base02"
+                placeholder="Template name"
+                className="w-full p-2.5 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-yellow focus:border-transparent bg-solarized-base3 text-solarized-base02 text-sm"
               />
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button
                   onClick={handleSaveAsTemplate}
                   disabled={!templateName.trim()}
-                  className="flex-1 bg-solarized-yellow text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-yellow/90 hover:-translate-y-0.5 active:translate-y-0 disabled:bg-solarized-base1 disabled:cursor-not-allowed disabled:text-solarized-base01 disabled:hover:translate-y-0 min-h-12"
+                  className="flex-1 bg-solarized-yellow text-solarized-base3 py-2 px-3 rounded-lg text-sm font-medium hover:bg-solarized-yellow/90 transition-colors disabled:bg-solarized-base1 disabled:cursor-not-allowed disabled:text-solarized-base01"
                 >
                   Save
                 </button>
@@ -392,7 +367,7 @@ export function WorkoutLogger({
                     setShowSaveTemplate(false);
                     setTemplateName('');
                   }}
-                  className="flex-1 bg-solarized-base1 text-solarized-base02 border-none py-3 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-base0 hover:-translate-y-0.5 active:translate-y-0 min-h-12"
+                  className="flex-1 bg-solarized-base1 text-solarized-base02 py-2 px-3 rounded-lg text-sm font-medium hover:bg-solarized-base0 transition-colors"
                 >
                   Cancel
                 </button>
@@ -400,100 +375,90 @@ export function WorkoutLogger({
             </div>
           </div>
         )}
-      </div>
 
-      {/* Grouped Sets */}
-      <div className="space-y-4">
+        {/* Compact Exercise Groups */}
         {groupedSets().map((group, groupIndex) => (
-          <div key={`${group.exerciseId}-${groupIndex}`} className={`rounded-xl p-4 shadow-lg border ${
-            group.exercise ? getCategoryBackgroundStyle(group.exercise.category) : 'bg-solarized-base2 border-solarized-base1'
-          }`}>
-            {/* Exercise Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <h3 className="font-semibold text-solarized-base02 text-lg">
+          <div key={`${group.exerciseId}-${groupIndex}`} className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            {/* Compact Exercise Header */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <h3 className="font-medium text-solarized-base02 text-sm truncate">
                   {group.exercise?.name || 'Unknown Exercise'}
                 </h3>
                 {group.exercise && (
-                  <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryStyle(group.exercise.category)}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full border ${getCategoryStyle(group.exercise.category)}`}>
                     {categories.find(c => c.value === group.exercise!.category)?.label}
                   </span>
                 )}
               </div>
-              <span className="text-sm text-solarized-base01 bg-solarized-base1/20 px-3 py-1 rounded-full">
-                {group.sets.length} set{group.sets.length !== 1 ? 's' : ''}
+              <span className="text-xs text-solarized-base01 bg-solarized-base1/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                {group.sets.length}
               </span>
             </div>
 
-            {/* Sets for this exercise */}
-            <div className="space-y-3">
+            {/* Compact Sets Grid */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
               {group.sets.map(({ set, originalIndex, setNumber }) => {
                 const setPosition = getSetPositionForExercise(set.exerciseId, originalIndex);
                 
                 return (
-                  <div key={originalIndex} className="bg-solarized-base1/10 rounded-lg p-3 border border-solarized-base1/20">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-solarized-base02">
+                  <div key={originalIndex} className="bg-solarized-base1/10 rounded-lg p-2 border border-solarized-base1/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-solarized-base02">
                         Set {setNumber}
                       </span>
                       <button
                         onClick={() => removeSet(originalIndex)}
-                        className="p-1 text-solarized-red hover:bg-solarized-red/10 rounded"
+                        className="p-0.5 text-solarized-red hover:bg-solarized-red/10 rounded"
                       >
-                        <X size={16} />
+                        <X size={12} />
                       </button>
                     </div>
                     
-                    <div>
-                      <div className="w-full">
-                        <input
-                          type="number"
-                          value={set.reps || ''}
-                          onChange={(e) => updateSet(originalIndex, 'reps', parseInt(e.target.value) || 0)}
-                          placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                          className="w-full p-6 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-2xl font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-base text-center"
-                          min="0"
-                        />
-                      </div>
-                    </div>
+                    <input
+                      type="number"
+                      value={set.reps || ''}
+                      onChange={(e) => updateSet(originalIndex, 'reps', parseInt(e.target.value) || 0)}
+                      placeholder={getPlaceholderText(set.exerciseId, setPosition)}
+                      className="w-full p-2 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-lg font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-xs text-center"
+                      min="0"
+                    />
                   </div>
                 );
               })}
             </div>
 
-            {/* Add another set of this exercise */}
+            {/* Add Set Button */}
             <button
               onClick={() => addSingleSet(group.exerciseId)}
-              className="w-full mt-3 bg-solarized-base1/30 text-solarized-base01 border-none py-2 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-base1/50 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 min-h-12"
+              className="w-full bg-solarized-base1/30 text-solarized-base01 py-2 px-3 rounded-lg text-sm font-medium hover:bg-solarized-base1/50 transition-colors flex items-center justify-center gap-1"
             >
-              <Plus size={16} />
-              Add Another Set
+              <Plus size={14} />
+              Add Set
             </button>
           </div>
         ))}
-      </div>
 
-      {/* Add Exercise Button - Always at bottom after all sets */}
-      {!showAddExercise ? (
-        <button
-          onClick={() => setShowAddExercise(true)}
-          className="w-full bg-solarized-blue text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-blue/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 min-h-12"
-        >
-          <Plus size={20} />
-          Add Exercise
-        </button>
-      ) : (
-        <div className="bg-solarized-base2 rounded-xl p-4 shadow-lg border border-solarized-base1">
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-solarized-base01 mb-2">
+        {/* Compact Add Exercise */}
+        {!showAddExercise ? (
+          <button
+            onClick={() => setShowAddExercise(true)}
+            className="w-full bg-solarized-blue text-solarized-base3 py-3 px-4 rounded-xl font-medium hover:bg-solarized-blue/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus size={18} />
+            Add Exercise
+          </button>
+        ) : (
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-solarized-base01 mb-1">
                   Exercise
                 </label>
                 <select
                   value={selectedExerciseId}
                   onChange={(e) => setSelectedExerciseId(e.target.value)}
-                  className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02"
+                  className="w-full p-2.5 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02 text-sm"
                 >
                   {categories.map(category => {
                     const categoryExercises = sortedExercises.filter(ex => ex.category === category.value);
@@ -513,87 +478,87 @@ export function WorkoutLogger({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-solarized-base01 mb-2">
-                  Number of Sets
+                <label className="block text-xs font-medium text-solarized-base01 mb-1">
+                  Sets
                 </label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={decrementSets}
-                    className="bg-solarized-base1/30 text-solarized-base01 border-none p-2 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-solarized-base1/50 hover:-translate-y-0.5 active:translate-y-0"
+                    className="bg-solarized-base1/30 text-solarized-base01 p-2 rounded-lg hover:bg-solarized-base1/50 transition-colors"
                   >
-                    <Minus size={16} />
+                    <Minus size={14} />
                   </button>
                   <input
                     type="number"
                     value={numberOfSets}
                     onChange={(e) => setNumberOfSets(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                    className="flex-1 p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02 text-center"
+                    className="flex-1 p-2.5 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02 text-center text-sm"
                     min="1"
                     max="10"
                   />
                   <button
                     type="button"
                     onClick={incrementSets}
-                    className="bg-solarized-base1/30 text-solarized-base01 border-none p-2 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-solarized-base1/50 hover:-translate-y-0.5 active:translate-y-0"
+                    className="bg-solarized-base1/30 text-solarized-base01 p-2 rounded-lg hover:bg-solarized-base1/50 transition-colors"
                   >
-                    <Plus size={16} />
+                    <Plus size={14} />
                   </button>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={addExerciseWithSets}
-                disabled={!selectedExerciseId || numberOfSets < 1}
-                className="bg-solarized-green text-solarized-base3 border-none py-2 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-green/90 hover:-translate-y-0.5 active:translate-y-0 disabled:bg-solarized-base1 disabled:cursor-not-allowed disabled:text-solarized-base01 disabled:hover:translate-y-0 min-h-12"
-              >
-                Add {numberOfSets} Set{numberOfSets !== 1 ? 's' : ''}
-              </button>
-              <button
-                onClick={() => setShowAddExercise(false)}
-                className="bg-solarized-base1 text-solarized-base02 border-none py-2 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-base0 hover:-translate-y-0.5 active:translate-y-0 min-h-12"
-              >
-                Cancel
-              </button>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={addExerciseWithSets}
+                  disabled={!selectedExerciseId || numberOfSets < 1}
+                  className="flex-1 bg-solarized-green text-solarized-base3 py-2 px-3 rounded-lg text-sm font-medium hover:bg-solarized-green/90 transition-colors disabled:bg-solarized-base1 disabled:cursor-not-allowed disabled:text-solarized-base01"
+                >
+                  Add {numberOfSets} Set{numberOfSets !== 1 ? 's' : ''}
+                </button>
+                <button
+                  onClick={() => setShowAddExercise(false)}
+                  className="flex-1 bg-solarized-base1 text-solarized-base02 py-2 px-3 rounded-lg text-sm font-medium hover:bg-solarized-base0 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Workout Notes */}
-      <div className="bg-solarized-base2 rounded-xl p-4 shadow-lg border border-solarized-base1">
-        <label className="block text-sm font-medium text-solarized-base01 mb-2">
-          Workout Notes
-        </label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02"
-          placeholder="How was your workout today?"
-          rows={3}
-        />
+        {/* Compact Notes */}
+        <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+          <label className="block text-xs font-medium text-solarized-base01 mb-1">
+            Notes
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full p-2.5 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02 text-sm"
+            placeholder="How was your workout?"
+            rows={2}
+          />
+        </div>
+
+        {/* Compact Action Buttons */}
+        {sets.length > 0 && (
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={handleSave}
+              className="flex-1 bg-solarized-green text-solarized-base3 py-3 px-4 rounded-xl font-medium hover:bg-solarized-green/90 transition-colors flex items-center justify-center gap-2"
+            >
+              <Save size={18} />
+              {todaysWorkout ? 'Update' : 'Save'}
+            </button>
+            <button
+              onClick={resetWorkout}
+              className="bg-solarized-base1 text-solarized-base02 px-4 py-3 rounded-xl hover:bg-solarized-base0 transition-colors"
+            >
+              <RotateCcw size={18} />
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* Action Buttons */}
-      {sets.length > 0 && (
-        <div className="flex gap-3">
-          <button
-            onClick={handleSave}
-            className="flex-1 bg-solarized-green text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-green/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 min-h-12"
-          >
-            <Save size={20} />
-            {todaysWorkout ? 'Update Workout' : 'Save Workout'}
-          </button>
-          <button
-            onClick={resetWorkout}
-            className="bg-solarized-base1 text-solarized-base02 border-none px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ease-in-out hover:bg-solarized-base0 hover:-translate-y-0.5 active:translate-y-0 min-h-12"
-          >
-            <RotateCcw size={20} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Target, TrendingUp, Percent } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Percent, Play } from 'lucide-react';
 import { Workout, WorkoutStats } from '../types';
 import { formatDate, isToday, getDaysAgo } from '../utils/dateUtils';
 
@@ -94,122 +94,157 @@ export function Dashboard({ workouts, stats, onStartWorkout }: DashboardProps) {
   const yearPercentage = getCurrentYearPercentage();
 
   return (
-    <div className="p-6 pb-24 space-y-6 bg-solarized-base3 min-h-screen">
-      {/* Training Percentages */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gradient-to-br from-solarized-blue to-solarized-cyan text-solarized-base3 p-3 rounded-xl shadow-lg">
-          <div className="flex items-center gap-1 mb-1">
-            <Percent size={16} />
-            <span className="text-xs font-medium">Week</span>
-          </div>
-          <p className="text-xl font-bold">{weekPercentage}%</p>
-          <p className="text-xs opacity-90">training</p>
-        </div>
-        
-        <div className="bg-gradient-to-br from-solarized-green to-solarized-cyan text-solarized-base3 p-3 rounded-xl shadow-lg">
-          <div className="flex items-center gap-1 mb-1">
-            <Target size={16} />
-            <span className="text-xs font-medium">Month</span>
-          </div>
-          <p className="text-xl font-bold">{monthPercentage}%</p>
-          <p className="text-xs opacity-90">training</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-solarized-violet to-solarized-magenta text-solarized-base3 p-3 rounded-xl shadow-lg">
-          <div className="flex items-center gap-1 mb-1">
-            <Calendar size={16} />
-            <span className="text-xs font-medium">Year</span>
-          </div>
-          <p className="text-xl font-bold">{yearPercentage}%</p>
-          <p className="text-xs opacity-90">training</p>
+    <div className="bg-solarized-base3 min-h-screen">
+      {/* iOS-style Header */}
+      <div className="bg-solarized-base3 pt-safe-top">
+        <div className="px-4 py-3 border-b border-solarized-base2">
+          <h1 className="text-lg font-semibold text-solarized-base02 text-center">
+            Dashboard
+          </h1>
         </div>
       </div>
 
-      {/* Today's Status */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
-        <div className="flex items-center gap-3 mb-4">
-          <Calendar size={20} className="text-solarized-blue" />
-          <h2 className="text-lg font-semibold text-solarized-base02">Today's Workout</h2>
-        </div>
-        
-        {todaysWorkout ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-solarized-green rounded-full"></div>
-              <span className="text-solarized-green font-medium">Completed!</span>
+      <div className="px-4 pb-24 space-y-3 pt-3">
+        {/* Compact Training Percentages */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gradient-to-br from-solarized-blue to-solarized-cyan text-solarized-base3 p-3 rounded-xl">
+            <div className="flex items-center gap-1 mb-1">
+              <Percent size={14} />
+              <span className="text-xs font-medium">Week</span>
             </div>
-            <div className="bg-solarized-green/10 p-3 rounded-lg border border-solarized-green/20">
-              <p className="text-sm text-solarized-base02">
-                Great job! You completed {todaysWorkout.sets.length} sets today.
-              </p>
-            </div>
+            <p className="text-xl font-bold">{weekPercentage}%</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-solarized-base01 rounded-full"></div>
-              <span className="text-solarized-base01">Not started yet</span>
+          
+          <div className="bg-gradient-to-br from-solarized-green to-solarized-cyan text-solarized-base3 p-3 rounded-xl">
+            <div className="flex items-center gap-1 mb-1">
+              <Target size={14} />
+              <span className="text-xs font-medium">Month</span>
             </div>
-            <button
-              onClick={onStartWorkout}
-              className="w-full bg-solarized-blue text-solarized-base3 py-3 px-4 rounded-lg font-medium hover:bg-solarized-blue/90 transition-colors shadow-md"
-            >
-              Start Today's Workout
-            </button>
+            <p className="text-xl font-bold">{monthPercentage}%</p>
           </div>
-        )}
-      </div>
 
-      {/* Recent Activity */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp size={20} className="text-solarized-blue" />
-          <h2 className="text-lg font-semibold text-solarized-base02">Recent Activity</h2>
+          <div className="bg-gradient-to-br from-solarized-violet to-solarized-magenta text-solarized-base3 p-3 rounded-xl">
+            <div className="flex items-center gap-1 mb-1">
+              <Calendar size={14} />
+              <span className="text-xs font-medium">Year</span>
+            </div>
+            <p className="text-xl font-bold">{yearPercentage}%</p>
+          </div>
         </div>
-        
-        {workouts.length > 0 ? (
-          <div className="space-y-3">
-            {workouts.slice(0, 5).map((workout) => (
-              <div key={workout.id} className="flex items-center justify-between py-2">
-                <div>
-                  <p className="font-medium text-solarized-base02">
-                    {formatDate(new Date(workout.date))}
-                  </p>
-                  <p className="text-sm text-solarized-base01">
-                    {workout.sets.length} sets completed
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-solarized-blue">
-                    {workout.sets.reduce((total, set) => total + set.reps, 0)} reps
-                  </p>
-                </div>
+
+        {/* Compact Today's Status */}
+        <div className="bg-solarized-base2 rounded-xl p-4 border border-solarized-base1">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-solarized-base02">Today</h2>
+            <Calendar size={16} className="text-solarized-blue" />
+          </div>
+          
+          {todaysWorkout ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-solarized-green rounded-full"></div>
+                <span className="text-solarized-green font-medium text-sm">Completed!</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-solarized-base01 mb-4">No workouts yet</p>
-            <button
-              onClick={onStartWorkout}
-              className="bg-solarized-blue text-solarized-base3 py-2 px-4 rounded-lg font-medium hover:bg-solarized-blue/90 transition-colors shadow-md"
-            >
-              Start Your First Workout
-            </button>
-          </div>
-        )}
-      </div>
+              <div className="bg-solarized-green/10 p-2.5 rounded-lg border border-solarized-green/20">
+                <p className="text-xs text-solarized-base02">
+                  {todaysWorkout.sets.length} sets • {todaysWorkout.sets.reduce((total, set) => total + set.reps, 0)} reps
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-solarized-base01 rounded-full"></div>
+                <span className="text-solarized-base01 text-sm">Ready to start</span>
+              </div>
+              <button
+                onClick={onStartWorkout}
+                className="w-full bg-solarized-blue text-solarized-base3 py-2.5 px-4 rounded-lg font-medium hover:bg-solarized-blue/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <Play size={16} />
+                Start Workout
+              </button>
+            </div>
+          )}
+        </div>
 
-      {/* Last Workout Info */}
-      {lastWorkout && lastWorkoutDays !== null && (
-        <div className="bg-solarized-blue/10 p-4 rounded-xl border border-solarized-blue/20">
-          <p className="text-sm text-solarized-base02">
-            Last workout was {lastWorkoutDays === 0 ? 'today' : 
+        {/* Compact Stats Grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <div className="text-center">
+              <div className="text-lg font-bold text-solarized-base02">{stats.currentStreak}</div>
+              <div className="text-xs text-solarized-base01">Current Streak</div>
+            </div>
+          </div>
+          
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <div className="text-center">
+              <div className="text-lg font-bold text-solarized-base02">{stats.longestStreak}</div>
+              <div className="text-xs text-solarized-base01">Best Streak</div>
+            </div>
+          </div>
+          
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <div className="text-center">
+              <div className="text-lg font-bold text-solarized-base02">{stats.totalWorkouts}</div>
+              <div className="text-xs text-solarized-base01">Total Workouts</div>
+            </div>
+          </div>
+          
+          <div className="bg-solarized-base2 rounded-xl p-3 border border-solarized-base1">
+            <div className="text-center">
+              <div className="text-lg font-bold text-solarized-base02">{stats.totalReps.toLocaleString()}</div>
+              <div className="text-xs text-solarized-base01">Total Reps</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Compact Recent Activity */}
+        <div className="bg-solarized-base2 rounded-xl p-4 border border-solarized-base1">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-solarized-base02">Recent</h2>
+            <TrendingUp size={16} className="text-solarized-blue" />
+          </div>
+          
+          {workouts.length > 0 ? (
+            <div className="space-y-2">
+              {workouts.slice(0, 3).map((workout) => (
+                <div key={workout.id} className="flex items-center justify-between py-1.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-solarized-base02 text-sm truncate">
+                      {formatDate(new Date(workout.date))}
+                    </p>
+                    <p className="text-xs text-solarized-base01">
+                      {workout.sets.length} sets • {workout.sets.reduce((total, set) => total + set.reps, 0)} reps
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-solarized-base01 mb-2 text-sm">No workouts yet</p>
+              <button
+                onClick={onStartWorkout}
+                className="bg-solarized-blue text-solarized-base3 py-2 px-3 rounded-lg font-medium hover:bg-solarized-blue/90 transition-colors text-sm"
+              >
+                Start First Workout
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Last Workout Info */}
+        {lastWorkout && lastWorkoutDays !== null && (
+          <div className="bg-solarized-blue/10 p-3 rounded-xl border border-solarized-blue/20">
+            <p className="text-xs text-solarized-base02 text-center">
+              Last workout: {lastWorkoutDays === 0 ? 'today' : 
                             lastWorkoutDays === 1 ? 'yesterday' : 
                             `${lastWorkoutDays} days ago`}
-          </p>
-        </div>
-      )}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
