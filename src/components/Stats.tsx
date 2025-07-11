@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity } from 'lucide-react';
+import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart } from 'lucide-react';
 import { Workout, WorkoutStats, Exercise } from '../types';
 import { formatShortDate, getDaysAgo } from '../utils/dateUtils';
+import { getExerciseMaxReps } from '../utils/maxRepUtils';
 
 interface StatsProps {
   workouts: Workout[];
@@ -12,6 +13,7 @@ interface StatsProps {
 export function Stats({ workouts, exercises, stats }: StatsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
+  const [maxChartExerciseId, setMaxChartExerciseId] = useState<string>('');
 
   const getExerciseStats = (year?: number) => {
     const filteredWorkouts = year 
@@ -368,6 +370,84 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
     return categoryCounts;
   };
 
+  // Get max reps over time for selected exercise (last 3 years)
+  const getMaxRepsOverTime = (exerciseId: string) => {
+    if (!exerciseId) return [];
+    
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+    
+    const relevantWorkouts = workouts.filter(workout => 
+      new Date(workout.date) >= threeYearsAgo &&
+      workout.sets.some(set => set.exerciseId === exerciseId)
+    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const maxData: Array<{ date: Date; maxReps: number; setPosition: number }> = [];
+    let runningMax = 0;
+    
+    relevantWorkouts.forEach(workout => {
+      const exerciseSets = workout.sets
+        .filter(set => set.exerciseId === exerciseId)
+        .map((set, index) => ({ ...set, position: index + 1 }));
+      
+      if (exerciseSets.length > 0) {
+        const workoutMax = Math.max(...exerciseSets.map(set => set.reps));
+        const maxSet = exerciseSets.find(set => set.reps === workoutMax);
+        
+        if (workoutMax > runningMax) {
+          runningMax = workoutMax;
+          maxData.push({
+            date: new Date(workout.date),
+            maxReps: workoutMax,
+            setPosition: maxSet?.position || 1
+          });
+        }
+      }
+    });
+    
+    return maxData;
+  };
+
+  // Generate chart points for area chart
+  const generateChartData = (exerciseId: string) => {
+    const maxData = getMaxRepsOverTime(exerciseId);
+    if (maxData.length === 0) return [];
+    
+    // Create a more complete timeline
+    const chartData = [];
+    let currentMax = 0;
+    
+    // Start from 3 years ago
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 3);
+    
+    // Add initial point
+    chartData.push({
+      date: startDate,
+      maxReps: 0,
+      setPosition: 0
+    });
+    
+    // Add all max improvement points
+    maxData.forEach(point => {
+      chartData.push(point);
+      currentMax = point.maxReps;
+    });
+    
+    // Add current point if needed
+    const lastPoint = maxData[maxData.length - 1];
+    const today = new Date();
+    if (!lastPoint || lastPoint.date.toDateString() !== today.toDateString()) {
+      chartData.push({
+        date: today,
+        maxReps: currentMax,
+        setPosition: lastPoint?.setPosition || 0
+      });
+    }
+    
+    return chartData;
+  };
+
   const exerciseStats = getExerciseStats(selectedYear);
   const availableYears = getAvailableYears();
   const weeklyData = getWeeklyData();
@@ -387,6 +467,10 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
   // Get exercise comparison data
   const exerciseComparison = selectedExerciseId ? getExerciseYearComparison(selectedExerciseId) : null;
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
+  
+  // Get max chart data
+  const maxChartData = maxChartExerciseId ? generateChartData(maxChartExerciseId) : [];
+  const maxChartExercise = exercises.find(e => e.id === maxChartExerciseId);
 
   const categories = [
     { value: 'abs', label: 'Abs', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -602,6 +686,184 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
         {!selectedExerciseId && (
           <p className="text-solarized-base01 text-center py-8">
             Select an exercise to see year-over-year comparison
+          </p>
+        )}
+      </div>
+
+      {/* Max over time chart */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <LineChart size={20} className="text-solarized-violet" />
+          Max Reps Over Time
+        </h3>
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-solarized-base01 mb-2">
+            Select Exercise
+          </label>
+          <select
+            value={maxChartExerciseId}
+            onChange={(e) => setMaxChartExerciseId(e.target.value)}
+            className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-violet focus:border-transparent bg-solarized-base3 text-solarized-base02"
+          >
+            <option value="">Choose an exercise...</option>
+            {categories.sort((a, b) => a.label.localeCompare(b.label)).map(category => {
+              const categoryExercises = sortedExercises.filter(ex => ex.category === category.value);
+              if (categoryExercises.length === 0) return null;
+              
+              return (
+                <optgroup key={category.value} label={category.label}>
+                  {categoryExercises.map(exercise => (
+                    <option key={exercise.id} value={exercise.id}>
+                      {exercise.name}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+        </div>
+
+        {maxChartData.length > 0 && maxChartExercise ? (
+          <div className="space-y-4">
+            <div className="text-center">
+              <h4 className="text-lg font-semibold text-solarized-base02">{maxChartExercise.name}</h4>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
+                categories.find(c => c.value === maxChartExercise.category)?.color || 'bg-gray-100 text-gray-800 border-gray-200'
+              }`}>
+                {categories.find(c => c.value === maxChartExercise.category)?.label}
+              </span>
+              <p className="text-sm text-solarized-base01 mt-2">
+                Current Max: <span className="font-bold text-solarized-violet">{maxChartData[maxChartData.length - 1]?.maxReps || 0} reps</span>
+              </p>
+            </div>
+
+            {/* Area Chart */}
+            <div className="relative h-48 bg-solarized-base1/10 rounded-lg p-4 border border-solarized-base1/20">
+              <svg className="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgb(108, 113, 196)" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="rgb(108, 113, 196)" stopOpacity="0.05" />
+                  </linearGradient>
+                </defs>
+                
+                {maxChartData.length > 1 && (() => {
+                  const maxReps = Math.max(...maxChartData.map(d => d.maxReps), 1);
+                  const minDate = maxChartData[0].date.getTime();
+                  const maxDate = maxChartData[maxChartData.length - 1].date.getTime();
+                  const dateRange = maxDate - minDate || 1;
+                  
+                  // Create path for area
+                  let pathData = '';
+                  maxChartData.forEach((point, index) => {
+                    const x = ((point.date.getTime() - minDate) / dateRange) * 400;
+                    const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                    
+                    if (index === 0) {
+                      pathData += `M ${x} 150 L ${x} ${y}`;
+                    } else {
+                      pathData += ` L ${x} ${y}`;
+                    }
+                  });
+                  pathData += ` L 400 150 Z`;
+                  
+                  // Create line path
+                  let linePath = '';
+                  maxChartData.forEach((point, index) => {
+                    const x = ((point.date.getTime() - minDate) / dateRange) * 400;
+                    const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                    
+                    if (index === 0) {
+                      linePath += `M ${x} ${y}`;
+                    } else {
+                      linePath += ` L ${x} ${y}`;
+                    }
+                  });
+                  
+                  return (
+                    <>
+                      {/* Area fill */}
+                      <path
+                        d={pathData}
+                        fill="url(#areaGradient)"
+                        stroke="none"
+                      />
+                      
+                      {/* Line */}
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke="rgb(108, 113, 196)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      
+                      {/* Data points */}
+                      {maxChartData.map((point, index) => {
+                        const x = ((point.date.getTime() - minDate) / dateRange) * 400;
+                        const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                        
+                        return (
+                          <circle
+                            key={index}
+                            cx={x}
+                            cy={y}
+                            r="4"
+                            fill="rgb(108, 113, 196)"
+                            stroke="white"
+                            strokeWidth="2"
+                          />
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </svg>
+              
+              {/* Y-axis labels */}
+              <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-solarized-base01 py-2">
+                <span>{Math.max(...maxChartData.map(d => d.maxReps), 1)}</span>
+                <span>{Math.round(Math.max(...maxChartData.map(d => d.maxReps), 1) / 2)}</span>
+                <span>0</span>
+              </div>
+              
+              {/* X-axis labels */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-solarized-base01 px-4 pb-1">
+                <span>{maxChartData[0]?.date.getFullYear()}</span>
+                <span>{maxChartData[maxChartData.length - 1]?.date.getFullYear()}</span>
+              </div>
+            </div>
+            
+            {/* Progress milestones */}
+            <div className="space-y-2">
+              <h5 className="font-medium text-solarized-base02">Progress Milestones</h5>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {getMaxRepsOverTime(maxChartExerciseId).slice(-5).reverse().map((milestone, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-solarized-violet/10 rounded border border-solarized-violet/20">
+                    <span className="text-sm text-solarized-base02">
+                      {milestone.date.toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </span>
+                    <span className="font-bold text-solarized-violet">
+                      {milestone.maxReps} reps
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : maxChartExerciseId ? (
+          <p className="text-solarized-base01 text-center py-8">
+            No data available for this exercise in the last 3 years
+          </p>
+        ) : (
+          <p className="text-solarized-base01 text-center py-8">
+            Select an exercise to see max reps progression over time
           </p>
         )}
       </div>
