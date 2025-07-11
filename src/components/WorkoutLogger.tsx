@@ -426,36 +426,34 @@ export function WorkoutLogger({
             </div>
 
             {/* Sets for this exercise */}
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               {group.sets.map(({ set, originalIndex, setNumber }) => {
                 const setPosition = getSetPositionForExercise(set.exerciseId, originalIndex);
                 
                 return (
-                  <div key={originalIndex} className="bg-solarized-base1/10 rounded-lg p-3 border border-solarized-base1/20">
-                    <div className="flex items-center justify-between mb-2">
+                  <div key={originalIndex} className="bg-solarized-base1/10 rounded-lg p-2 border border-solarized-base1/20">
+                    <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-solarized-base02">
                         Set {setNumber}
                       </span>
-                      <button
-                        onClick={() => removeSet(originalIndex)}
-                        className="p-1 text-solarized-red hover:bg-solarized-red/10 rounded"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                    
-                    <div>
-                      <div className="w-full">
-                        <input
-                          type="number"
-                          value={set.reps || ''}
-                          onChange={(e) => updateSet(originalIndex, 'reps', parseInt(e.target.value) || 0)}
-                          placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                          className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-lg font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-xs text-center"
-                          min="0"
-                        />
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => removeSet(originalIndex)}
+                          className="p-0.5 text-solarized-red hover:bg-solarized-red/10 rounded"
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     </div>
+                    
+                    <input
+                      type="number"
+                      value={set.reps || ''}
+                      onChange={(e) => updateSet(originalIndex, 'reps', parseInt(e.target.value) || 0)}
+                      placeholder={getPlaceholderText(set.exerciseId, setPosition)}
+                      className="w-full p-2 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-lg font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-xs text-center"
+                      min="0"
+                    />
                   </div>
                 );
               })}
