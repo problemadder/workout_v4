@@ -216,13 +216,13 @@ export function WorkoutLogger({
     const parts = [];
     
     if (stats.max > 0) {
-      parts.push(`max ${stats.max}`);
+      parts.push(`↑${stats.max}`);
     }
     if (stats.average > 0) {
-      parts.push(`avg ${stats.average}`);
+      parts.push(`⌀${stats.average}`);
     }
     
-    return parts.length > 0 ? parts.join(' / ') : 'Enter reps';
+    return parts.length > 0 ? parts.join(' ') : 'Enter reps';
   };
 
   const incrementSets = () => {
@@ -409,7 +409,7 @@ export function WorkoutLogger({
                       value={set.reps || ''}
                       onChange={(e) => updateSet(originalIndex, 'reps', parseInt(e.target.value) || 0)}
                       placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                      className="w-full p-2 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-lg font-bold bg-solarized-base3 text-solarized-base02 placeholder-solarized-base01 placeholder:text-xs text-center"
+                      className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-xl font-bold bg-solarized-base3 text-solarized-base02 placeholder-solarized-base01 placeholder:text-sm text-center"
                       min="0"
                     />
                   </div>
