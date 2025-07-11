@@ -442,6 +442,39 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
         </div>
       </div>
 
+      {/* Weekly Activity */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <Calendar size={20} className="text-solarized-blue" />
+          Last 7 Days
+        </h3>
+        <div className="space-y-3">
+          {weeklyData.map((day, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <div className="w-12 text-xs text-solarized-base01">
+                {formatShortDate(day.date)}
+              </div>
+              <div className="flex-1 bg-solarized-base1/20 rounded-full h-6 relative overflow-hidden">
+                {day.sets > 0 && (
+                  <div
+                    className="bg-solarized-blue h-full rounded-full transition-all duration-300"
+                    style={{ width: `${(day.sets / maxSets) * 100}%` }}
+                  />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-medium text-solarized-base02">
+                    {day.sets > 0 ? `${day.sets} sets` : 'Rest'}
+                  </span>
+                </div>
+              </div>
+              <div className="w-16 text-xs text-solarized-base01 text-right">
+                {day.reps > 0 ? `${day.reps} reps` : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Exercise Year Comparison */}
       <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
@@ -719,39 +752,6 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
         ) : (
           <p className="text-solarized-base01 text-center py-4">No sets completed in {lastMonthName}</p>
         )}
-      </div>
-
-      {/* Weekly Activity */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
-          <Calendar size={20} className="text-solarized-blue" />
-          Last 7 Days
-        </h3>
-        <div className="space-y-3">
-          {weeklyData.map((day, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <div className="w-12 text-xs text-solarized-base01">
-                {formatShortDate(day.date)}
-              </div>
-              <div className="flex-1 bg-solarized-base1/20 rounded-full h-6 relative overflow-hidden">
-                {day.sets > 0 && (
-                  <div
-                    className="bg-solarized-blue h-full rounded-full transition-all duration-300"
-                    style={{ width: `${(day.sets / maxSets) * 100}%` }}
-                  />
-                )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-medium text-solarized-base02">
-                    {day.sets > 0 ? `${day.sets} sets` : 'Rest'}
-                  </span>
-                </div>
-              </div>
-              <div className="w-16 text-xs text-solarized-base01 text-right">
-                {day.reps > 0 ? `${day.reps} reps` : ''}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Exercise Breakdown with Year Filter */}
