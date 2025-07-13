@@ -201,6 +201,8 @@ export function TemplateManager({
       // Parse templates
       const templateMap = new Map<string, { exerciseId: string; sets: number }[]>();
       const exerciseMap = new Map(exercises.map(ex => [ex.name.toLowerCase(), ex]));
+      const missingExercises = new Set<string>();
+      const skippedTemplates = new Set<string>();
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -219,7 +221,9 @@ export function TemplateManager({
 
         const exercise = exerciseMap.get(exerciseName.toLowerCase());
         if (!exercise) {
-          console.warn(`Exercise "${exerciseName}" not found, skipping`);
+          console.warn(`Exercise "${exerciseName}" not found, skipping row for template "${templateName}"`);
+          missingExercises.add(exerciseName);
+          skippedTemplates.add(templateName);
           continue;
         }
 
@@ -234,23 +238,46 @@ export function TemplateManager({
       }
 
       console.log('Template map:', templateMap);
+      console.log('Missing exercises:', Array.from(missingExercises));
 
       // Create templates
       let importedCount = 0;
+      let partiallyImported = 0;
       templateMap.forEach((templateExercises, templateName) => {
         console.log(`Creating template: ${templateName} with ${templateExercises.length} exercises`);
         // Check if template already exists
-        onAddTemplate({
-          name: templateName,
-          exercises: templateExercises
-        });
-        importedCount++;
+        
+        if (templateExercises.length > 0) {
+          onAddTemplate({
+            name: templateName,
+            exercises: templateExercises
+          });
+          
+          if (skippedTemplates.has(templateName)) {
+            partiallyImported++;
+          } else {
+            importedCount++;
+          }
+        }
       });
 
+      // Create detailed feedback message
+      let message = '';
       if (importedCount > 0) {
-        alert(`Successfully imported ${importedCount} templates`);
+        message += `Successfully imported ${importedCount} complete template(s). `;
+      }
+      if (partiallyImported > 0) {
+        message += `${partiallyImported} template(s) imported partially (some exercises were missing). `;
+      }
+      if (missingExercises.size > 0) {
+        message += `\n\nMissing exercises: ${Array.from(missingExercises).join(', ')}`;
+        message += `\n\nPlease add these exercises first, then re-import the templates.`;
+      }
+      
+      if (message) {
+        alert(message);
       } else {
-        alert('No new templates were imported');
+        alert('No templates were imported. All exercises in the CSV are missing from your exercise list.');
       }
     } catch (error) {
       console.error('Import error:', error);
