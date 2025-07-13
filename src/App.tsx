@@ -158,16 +158,24 @@ function App() {
     })).filter(template => template.exercises.length > 0));
   };
 
-  const handleAddTemplate = (templateData: Omit<WorkoutTemplate, 'id' | 'createdAt'>) => {
-    const newTemplate: WorkoutTemplate = {
-      ...templateData,
-      id: crypto.randomUUID(),
-      createdAt: new Date()
-    };
-    
-    console.log('Creating new template:', newTemplate);
-    setTemplates(prevTemplates => [...prevTemplates, newTemplate]);
-    console.log('Template added successfully');
+  const handleAddTemplate = (templateData: Omit<WorkoutTemplate, 'id' | 'createdAt'> | WorkoutTemplate[]) => {
+    if (Array.isArray(templateData)) {
+      // Batch import
+      console.log(`Batch importing ${templateData.length} templates`);
+      setTemplates(prevTemplates => [...prevTemplates, ...templateData]);
+      console.log('Batch templates added successfully');
+    } else {
+      // Single template
+      const newTemplate: WorkoutTemplate = {
+        ...templateData,
+        id: crypto.randomUUID(),
+        createdAt: new Date()
+      };
+      
+      console.log('Creating new template:', newTemplate);
+      setTemplates(prevTemplates => [...prevTemplates, newTemplate]);
+      console.log('Template added successfully');
+    }
   };
 
   const handleEditTemplate = (id: string, templateData: Omit<WorkoutTemplate, 'id' | 'createdAt'>) => {

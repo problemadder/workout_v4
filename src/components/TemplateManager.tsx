@@ -253,6 +253,7 @@ export function TemplateManager({
       let importedCount = 0;
       let partiallyImported = 0;
       let skippedDuplicates = 0;
+      const templatesToAdd: WorkoutTemplate[] = [];
       
       for (const [templateName, templateExercises] of templateMap.entries()) {
         console.log(`Creating template: ${templateName} with ${templateExercises.length} exercises`);
@@ -260,6 +261,7 @@ export function TemplateManager({
         
         if (templateExercises.length > 0) {
           // Check if template with same name already exists
+          const existingTemplate = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
           const existingTemplate = templates.find(t => t.name.toLowerCase() === templateName.toLowerCase());
           if (existingTemplate) {
             console.log(`Template "${templateName}" already exists, skipping`);
@@ -273,15 +275,17 @@ export function TemplateManager({
             exercises: templateExercises
           });
           
-          onAddTemplate({
+          // Create the template object and add to batch
+          const newTemplate: WorkoutTemplate = {
             name: templateName,
-            exercises: templateExercises
-          });
+            exercises: templateExercises,
+            id: crypto.randomUUID(),
+            createdAt: new Date()
+          };
           
-          console.log(`onAddTemplate called successfully for: ${templateName}`);
+          templatesToAdd.push(newTemplate);
           
-          // Small delay to ensure the state update is processed
-          await new Promise(resolve => setTimeout(resolve, 10));
+          console.log(`Template prepared for batch import: ${templateName}`);
           
           if (skippedTemplates.has(templateName)) {
             partiallyImported++;
@@ -289,6 +293,12 @@ export function TemplateManager({
             importedCount++;
           }
         }
+      }
+      
+      // Add all templates in a single batch update
+      if (templatesToAdd.length > 0) {
+        console.log(`Adding ${templatesToAdd.length} templates in batch`);
+        onAddTemplate(templatesToAdd);
       }
       
       console.log(`Final counts: imported=${importedCount}, partiallyImported=${partiallyImported}`);
