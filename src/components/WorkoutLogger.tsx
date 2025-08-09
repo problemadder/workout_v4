@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Minus, Save, RotateCcw, BookOpen, Trophy, TrendingUp, Star, X } from 'lucide-react';
+import { Plus, Minus, Save, RotateCcw, BookOpen, Trophy, TrendingUp, Star, X, Search } from 'lucide-react';
 import { Exercise, WorkoutSet, Workout, WorkoutTemplate } from '../types';
 import { formatDate, isToday } from '../utils/dateUtils';
 import { getExerciseMaxReps, getExerciseAverageReps } from '../utils/maxRepUtils';
@@ -34,6 +34,7 @@ export function WorkoutLogger({
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [numberOfSets, setNumberOfSets] = useState(3);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories = [
     { value: 'abs', label: 'Abs', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
@@ -278,6 +279,14 @@ export function WorkoutLogger({
     ? sortedExercises 
     : sortedExercises.filter(ex => ex.category === selectedCategory);
 
+  // Further filter by search query
+  const searchFilteredExercises = searchQuery.trim() 
+    ? filteredExercises.filter(ex => 
+        ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (ex.description && ex.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : filteredExercises;
+
   // Group consecutive sets by exercise
   const groupedSets = () => {
     const groups: Array<{
@@ -499,6 +508,28 @@ export function WorkoutLogger({
       ) : (
         <div className="bg-solarized-base2 rounded-xl p-4 shadow-lg border border-solarized-base1">
           <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={20} className="text-solarized-base01" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search exercises..."
+                className="w-full pl-10 pr-4 py-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02 placeholder-solarized-base01"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <X size={16} className="text-solarized-base01 hover:text-solarized-base02" />
+                </button>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-solarized-base01 mb-2">
@@ -509,8 +540,21 @@ export function WorkoutLogger({
                   onChange={(e) => setSelectedExerciseId(e.target.value)}
                   className="w-full p-3 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent bg-solarized-base3 text-solarized-base02"
                 >
-                  {categories.map(category => {
-                    const categoryExercises = sortedExercises.filter(ex => ex.category === category.value);
+                  {searchQuery ? (
+                    // When searching, show all matching exercises without category grouping
+                    searchFilteredExercises.length > 0 ? (
+                      searchFilteredExercises.map(exercise => (
+                        <option key={exercise.id} value={exercise.id}>
+                          {exercise.name} ({categories.find(c => c.value === exercise.category)?.label})
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>No exercises found matching "{searchQuery}"</option>
+                    )
+                  ) : (
+                    // When not searching, show grouped by category
+                    categories.map(category => {
+                      const categoryExercises = searchFilteredExercises.filter(ex => ex.category === category.value);
                     if (categoryExercises.length === 0) return null;
                     
                     return (
@@ -522,7 +566,8 @@ export function WorkoutLogger({
                         ))}
                       </optgroup>
                     );
-                  })}
+                    })
+                  )}
                 </select>
               </div>
               
@@ -560,13 +605,16 @@ export function WorkoutLogger({
             <div className="flex gap-3">
               <button
                 onClick={addExerciseWithSets}
-                disabled={!selectedExerciseId || numberOfSets < 1}
+                disabled={!selectedExerciseId || numberOfSets < 1 || searchFilteredExercises.length === 0}
                 className="bg-solarized-green text-solarized-base3 border-none py-2 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-green/90 hover:-translate-y-0.5 active:translate-y-0 disabled:bg-solarized-base1 disabled:cursor-not-allowed disabled:text-solarized-base01 disabled:hover:translate-y-0 min-h-12"
               >
                 Add {numberOfSets} Set{numberOfSets !== 1 ? 's' : ''}
               </button>
               <button
-                onClick={() => setShowAddExercise(false)}
+                onClick={() => {
+                  setShowAddExercise(false);
+                  setSearchQuery('');
+                }}
                 className="bg-solarized-base1 text-solarized-base02 border-none py-2 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-base0 hover:-translate-y-0.5 active:translate-y-0 min-h-12"
               >
                 Cancel
