@@ -211,6 +211,43 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
     return Math.round((workoutDays / daysInYear.length) * 100);
   };
 
+  // Calculate yearly training percentages for all tracked years
+  const getYearlyTrainingPercentages = () => {
+    const years = getAvailableYears();
+    const currentYear = new Date().getFullYear();
+    
+    return years.map(year => {
+      const firstDayOfYear = new Date(year, 0, 1);
+      const lastDayOfYear = year === currentYear 
+        ? new Date() // Up to today for current year
+        : new Date(year, 11, 31); // Full year for past years
+      
+      const daysInPeriod = [];
+      const currentDate = new Date(firstDayOfYear);
+      
+      while (currentDate <= lastDayOfYear) {
+        daysInPeriod.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      const workoutDays = daysInPeriod.filter(day => 
+        workouts.some(workout => 
+          new Date(workout.date).toDateString() === day.toDateString()
+        )
+      ).length;
+      
+      const percentage = Math.round((workoutDays / daysInPeriod.length) * 100);
+      
+      return {
+        year,
+        percentage,
+        workoutDays,
+        totalDays: daysInPeriod.length,
+        isCurrent: year === currentYear
+      };
+    });
+  };
+
   // Calculate monthly training percentages for this year
   const getThisYearMonthlyData = () => {
     const currentYear = new Date().getFullYear();
@@ -460,6 +497,7 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
   const lastMonthlyCategoryStats = getLastMonthlyCategoryStats();
   const thisYearMonthlyData = getThisYearMonthlyData();
   const lastYearMonthlyData = getLastYearMonthlyData();
+  const yearlyTrainingData = getYearlyTrainingPercentages();
 
   // Sort exercises alphabetically for the dropdown
   const sortedExercises = [...exercises].sort((a, b) => a.name.localeCompare(b.name));
@@ -493,6 +531,7 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
   const maxThisYearPercentage = Math.max(...thisYearMonthlyData.map(d => d.percentage), 1);
   const maxLastYearPercentage = Math.max(...lastYearMonthlyData.map(d => d.percentage), 1);
   const maxChartPercentage = Math.max(maxThisYearPercentage, maxLastYearPercentage, 100);
+  const maxYearlyPercentage = Math.max(...yearlyTrainingData.map(d => d.percentage), 100);
 
   return (
     <div className="p-6 pb-24 space-y-6 bg-solarized-base3 min-h-screen">
@@ -692,6 +731,44 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
           <p className="text-solarized-base01 text-center py-8">
             Select an exercise to see year-over-year comparison
           </p>
+        )}
+      </div>
+
+      {/* Yearly Training Percentages */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <BarChart3 size={20} className="text-solarized-green" />
+          Training Days by Year
+        </h3>
+        {yearlyTrainingData.length > 0 ? (
+          <div className="space-y-3">
+            {yearlyTrainingData.map((data, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-12 text-sm text-solarized-base01 font-medium">
+                  {data.year}
+                  {data.isCurrent && <span className="text-xs block text-solarized-blue">current</span>}
+                </div>
+                <div className="flex-1 bg-solarized-base1/20 rounded-full h-8 relative overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      data.isCurrent ? 'bg-solarized-blue' : 'bg-solarized-green'
+                    }`}
+                    style={{ width: `${(data.percentage / maxYearlyPercentage) * 100}%` }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-solarized-base02">
+                      {data.percentage}%
+                    </span>
+                  </div>
+                </div>
+                <div className="w-24 text-xs text-solarized-base01 text-right">
+                  {data.workoutDays}/{data.totalDays} days
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-solarized-base01 text-center py-4">No workout data available</p>
         )}
       </div>
 
