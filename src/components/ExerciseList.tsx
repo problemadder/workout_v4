@@ -24,7 +24,7 @@ export function ExerciseList({ exercises, onAddExercise, onEditExercise, onDelet
     { value: 'legs', label: 'Legs', color: 'bg-green-100 text-green-800 border-green-200' },
     { value: 'arms', label: 'Arms', color: 'bg-blue-100 text-blue-800 border-blue-200' },
     { value: 'back', label: 'Back', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-    { value: 'shoulders', label: 'Shoulders', color: 'bg-slate-200 text-slate-700 border-slate-300' },
+    { value: 'shoulders', label: 'Shoulders', color: 'bg-gray-300 text-gray-700 border-gray-400' },
     { value: 'chest', label: 'Chest', color: 'bg-pink-100 text-pink-800 border-pink-200' },
     { value: 'cardio', label: 'Cardio', color: 'bg-red-100 text-red-800 border-red-200' },
     { value: 'full-body', label: 'Full Body', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' }

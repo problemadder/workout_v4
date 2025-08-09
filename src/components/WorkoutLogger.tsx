@@ -43,7 +43,7 @@ export function WorkoutLogger({
     { value: 'chest', label: 'Chest', color: 'bg-pink-100 text-pink-800 border-pink-200' },
     { value: 'full-body', label: 'Full Body', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
     { value: 'legs', label: 'Legs', color: 'bg-green-100 text-green-800 border-green-200' },
-    { value: 'shoulders', label: 'Shoulders', color: 'bg-gray-100 text-gray-800 border-gray-200' }
+    { value: 'shoulders', label: 'Shoulders', color: 'bg-gray-300 text-gray-700 border-gray-400' }
   ];
 
   // Sort exercises alphabetically
@@ -240,7 +240,7 @@ export function WorkoutLogger({
       case 'back':
         return 'bg-purple-100 border-purple-200';
       case 'shoulders':
-        return 'bg-gray-100 border-gray-200';
+        return 'bg-gray-300 border-gray-400';
       case 'chest':
         return 'bg-[#6F826A] border-[#6F826A]';
       case 'cardio':
