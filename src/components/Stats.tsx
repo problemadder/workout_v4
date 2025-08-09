@@ -535,8 +535,13 @@ export function Stats({ workouts, exercises, stats }: StatsProps) {
         <div className="space-y-3">
           {weeklyData.map((day, index) => (
             <div key={index} className="flex items-center gap-3">
-              <div className="w-12 text-xs text-solarized-base01">
-                {formatShortDate(day.date)}
+              <div className="w-16 text-xs text-solarized-base01">
+                <div className="font-medium">
+                  {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                </div>
+                <div>
+                  {formatShortDate(day.date)}
+                </div>
               </div>
               <div className="flex-1 bg-solarized-base1/20 rounded-full h-6 relative overflow-hidden">
                 {day.sets > 0 && (
