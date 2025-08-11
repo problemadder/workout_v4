@@ -9,6 +9,7 @@ import { ImportExport } from './components/ImportExport';
 import { Targets } from './components/Targets';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Exercise, Workout, WorkoutStats, WorkoutTemplate, WorkoutTarget } from './types';
+import { CustomCategoryColor } from './hooks/useLocalStorage';
 import { defaultExercises } from './data/defaultExercises';
 import { isToday, getDaysAgo } from './utils/dateUtils';
 
@@ -18,6 +19,7 @@ function App() {
   const [workouts, setWorkouts] = useLocalStorage<Workout[]>('abs-workouts', []);
   const [templates, setTemplates] = useLocalStorage<WorkoutTemplate[]>('abs-templates', []);
   const [targets, setTargets] = useLocalStorage<WorkoutTarget[]>('abs-targets', []);
+  const [customCategoryColors, setCustomCategoryColors] = useLocalStorage<CustomCategoryColor[]>('abs-custom-category-colors', []);
   const [pendingWorkout, setPendingWorkout] = useState<{
     sets: Array<{ exerciseId: string; reps: number }>;
     notes: string;
@@ -301,6 +303,19 @@ function App() {
     setTargets([...targets, ...uniqueNewTargets]);
   };
 
+  const handleAddCustomCategoryColor = (categoryColor: CustomCategoryColor) => {
+    const existingIndex = customCategoryColors.findIndex(c => c.category === categoryColor.category);
+    if (existingIndex >= 0) {
+      // Update existing
+      const updated = [...customCategoryColors];
+      updated[existingIndex] = categoryColor;
+      setCustomCategoryColors(updated);
+    } else {
+      // Add new
+      setCustomCategoryColors([...customCategoryColors, categoryColor]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-solarized-base3">
       <main className="relative">
@@ -315,9 +330,11 @@ function App() {
         {activeTab === 'exercises' && (
           <ExerciseList
             exercises={exercises}
+            customCategoryColors={customCategoryColors}
             onAddExercise={handleAddExercise}
             onEditExercise={handleEditExercise}
             onDeleteExercise={handleDeleteExercise}
+            onAddCustomCategoryColor={handleAddCustomCategoryColor}
           />
         )}
 
@@ -335,6 +352,7 @@ function App() {
         {activeTab === 'workout' && (
           <WorkoutLogger
             exercises={exercises}
+            customCategoryColors={customCategoryColors}
             todaysWorkout={todaysWorkout || null}
             workouts={workouts}
             templates={templates}
@@ -342,6 +360,7 @@ function App() {
             onUpdateWorkout={handleUpdateWorkout}
             onAddTemplate={handleAddTemplate}
             onWorkoutDataChange={handleWorkoutDataChange}
+            onAddCustomCategoryColor={handleAddCustomCategoryColor}
           />
         )}
         
@@ -349,6 +368,7 @@ function App() {
           <Stats
             workouts={sortedWorkouts}
             exercises={exercises}
+            customCategoryColors={customCategoryColors}
             stats={stats}
           />
         )}
@@ -369,9 +389,11 @@ function App() {
             exercises={exercises}
             workouts={workouts}
             targets={targets}
+            customCategoryColors={customCategoryColors}
             onImportExercises={handleImportExercises}
             onImportWorkouts={handleImportWorkouts}
             onImportTargets={handleImportTargets}
+            onAddCustomCategoryColor={handleAddCustomCategoryColor}
           />
         )}
       </main>

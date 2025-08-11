@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart } from 'lucide-react';
 import { Workout, WorkoutStats, Exercise } from '../types';
+import { CustomCategoryColor } from '../hooks/useLocalStorage';
 import { formatShortDate, getDaysAgo } from '../utils/dateUtils';
 import { getExerciseMaxReps } from '../utils/maxRepUtils';
 
 interface StatsProps {
   workouts: Workout[];
   exercises: Exercise[];
+  customCategoryColors: CustomCategoryColor[];
   stats: WorkoutStats;
 }
 
 export function Stats({ workouts, exercises, stats }: StatsProps) {
+export function Stats({ workouts, exercises, customCategoryColors, stats }: StatsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
   const [maxChartExerciseId, setMaxChartExerciseId] = useState<string>('');
