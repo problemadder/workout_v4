@@ -237,7 +237,6 @@ export function ExerciseList({ exercises, onAddExercise, onEditExercise, onDelet
                 
                 <div className="flex items-center justify-between">
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getCategoryStyle(exercise.category)}`}>
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getCategoryStyle(exercise.category)}`} style={{ backgroundColor: categories.find(c => c.value === exercise.category)?.bgColor }}>
                     {categories.find(c => c.value === exercise.category)?.label}
                   </span>
                   <div className="flex gap-2">
