@@ -181,7 +181,7 @@ export function Dashboard({ workouts, stats, onStartWorkout }: DashboardProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-solarized-blue">
-                    {workout.sets.reduce((total, set) => total + set.reps, 0)} reps
+                    {Math.round(workout.sets.reduce((total, set) => total + set.reps, 0))} reps
                   </p>
                 </div>
               </div>
