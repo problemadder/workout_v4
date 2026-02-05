@@ -286,10 +286,10 @@ export function WorkoutLogger({
     const parts = [];
     
     if (stats.max > 0) {
-      parts.push(`↑${stats.max}`);
+      parts.push(`↑${stats.max.toFixed(2)}`);
     }
     if (stats.average > 0) {
-      parts.push(`⌀${stats.average}`);
+      parts.push(`⌀${stats.average.toFixed(2)}`);
     }
     
     return parts.length > 0 ? parts.join(' ') : 'Enter reps';
