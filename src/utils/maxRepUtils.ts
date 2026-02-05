@@ -61,7 +61,7 @@ export function calculateAverageReps(workouts: Workout[], exerciseId: string, se
   return {
     exerciseId,
     setPosition,
-    averageReps: Math.round((totalReps / totalSets) * 10) / 10, // Round to 1 decimal
+    averageReps: Math.round((totalReps / totalSets) * 100) / 100,
     totalSets
   };
 }

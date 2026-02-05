@@ -284,14 +284,17 @@ export function WorkoutLogger({
   const getPlaceholderText = (exerciseId: string, setPosition: number) => {
     const stats = getStatsForSet(exerciseId, setPosition);
     const parts = [];
-    
-    if (stats.max > 0) {
+
+    const hasMax = typeof stats.max === 'number' && stats.max !== 0;
+    const hasAverage = typeof stats.average === 'number' && stats.average !== 0;
+
+    if (hasMax) {
       parts.push(`↑${stats.max.toFixed(2)}`);
     }
-    if (stats.average > 0) {
+    if (hasAverage) {
       parts.push(`⌀${stats.average.toFixed(2)}`);
     }
-    
+
     return parts.length > 0 ? parts.join(' ') : 'Enter reps';
   };
 
