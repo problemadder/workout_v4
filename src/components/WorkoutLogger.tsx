@@ -285,14 +285,19 @@ export function WorkoutLogger({
     const stats = getStatsForSet(exerciseId, setPosition);
     const parts = [];
 
-    const hasMax = typeof stats.max === 'number' && stats.max !== 0;
-    const hasAverage = typeof stats.average === 'number' && stats.average !== 0;
+    const formatStatValue = (value: number) => {
+      const rounded = Math.round(value * 10) / 10;
+      return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
+    };
+
+    const hasMax = stats.max !== 0 && stats.max !== undefined;
+    const hasAverage = stats.average !== 0 && stats.average !== undefined;
 
     if (hasMax) {
-      parts.push(`↑${stats.max.toFixed(2)}`);
+      parts.push(`↑${formatStatValue(stats.max)}`);
     }
     if (hasAverage) {
-      parts.push(`⌀${stats.average.toFixed(2)}`);
+      parts.push(`⌀${formatStatValue(stats.average)}`);
     }
 
     return parts.length > 0 ? parts.join(' ') : 'Enter reps';
