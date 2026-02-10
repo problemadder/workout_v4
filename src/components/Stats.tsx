@@ -4,6 +4,7 @@ import { Workout, Exercise } from '../types';
 import { formatShortDate } from '../utils/dateUtils';
 import { formatSingleDecimal } from '../utils/formatUtils';
 import { PieChart } from './PieChart';
+import { BarChart } from './BarChart';
 
 interface StatsProps {
   workouts: Workout[];
@@ -406,6 +407,121 @@ export function Stats({ workouts, exercises }: StatsProps) {
     return restDaysData;
   };
 
+  // Helper function to calculate consistency pattern based on IQR
+  const getConsistencyPattern = (restDays: number[]): 'Stable' | 'Variable' | 'Irregular' => {
+    if (restDays.length < 2) return 'Stable';
+    
+    // Sort the array
+    const sorted = [...restDays].sort((a, b) => a - b);
+    
+    // Calculate quartiles
+    const q1Index = Math.floor(sorted.length * 0.25);
+    const q3Index = Math.floor(sorted.length * 0.75);
+    const q1 = sorted[q1Index];
+    const q3 = sorted[q3Index];
+    const iqr = q3 - q1;
+    
+    // Determine pattern based on IQR
+    if (iqr <= 2) return 'Stable';
+    if (iqr <= 7) return 'Variable';
+    return 'Irregular';
+  };
+
+  // Calculate category consistency stats for the last 4 months (current month + last 3 months)
+  const getCategoryConsistencyStats = () => {
+    const now = new Date();
+    const fourMonthsAgo = new Date(now);
+    fourMonthsAgo.setMonth(now.getMonth() - 4);
+    fourMonthsAgo.setHours(0, 0, 0, 0);
+
+    // Filter workouts for the last 4 months
+    const recentWorkouts = workouts.filter(workout => 
+      new Date(workout.date) >= fourMonthsAgo
+    );
+
+    // Group workouts by category and date
+    const categoryWorkoutDates: Record<string, Date[]> = {};
+    
+    recentWorkouts.forEach(workout => {
+      const workoutDate = new Date(workout.date.getFullYear(), workout.date.getMonth(), workout.date.getDate());
+      
+      workout.sets.forEach(set => {
+        const exercise = exercises.find(e => e.id === set.exerciseId);
+        if (exercise) {
+          if (!categoryWorkoutDates[exercise.category]) {
+            categoryWorkoutDates[exercise.category] = [];
+          }
+          // Only add unique dates for each category
+          const hasDate = categoryWorkoutDates[exercise.category].some(
+            d => d.getTime() === workoutDate.getTime()
+          );
+          if (!hasDate) {
+            categoryWorkoutDates[exercise.category].push(workoutDate);
+          }
+        }
+      });
+    });
+
+    // Calculate rest days and metrics for each category
+    const categoryStats: Array<{
+      category: string;
+      workoutCount: number;
+      restDays: number[];
+      medianRestDays: number;
+      pattern: 'Stable' | 'Variable' | 'Irregular';
+      range: string;
+    }> = [];
+
+    Object.entries(categoryWorkoutDates).forEach(([category, dates]) => {
+      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      
+      if (sortedDates.length >= 2) {
+        const restDays: number[] = [];
+        for (let i = 1; i < sortedDates.length; i++) {
+          const diffTime = sortedDates[i].getTime() - sortedDates[i - 1].getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          restDays.push(diffDays);
+        }
+        
+        // Calculate median
+        const sortedRestDays = [...restDays].sort((a, b) => a - b);
+        const medianIndex = Math.floor(sortedRestDays.length / 2);
+        const medianRestDays = sortedRestDays.length % 2 === 0
+          ? (sortedRestDays[medianIndex - 1] + sortedRestDays[medianIndex]) / 2
+          : sortedRestDays[medianIndex];
+        
+        // Calculate range
+        const minRestDays = Math.min(...restDays);
+        const maxRestDays = Math.max(...restDays);
+        const range = `${minRestDays}-${maxRestDays} days`;
+        
+        // Determine pattern
+        const pattern = getConsistencyPattern(restDays);
+        
+        categoryStats.push({
+          category,
+          workoutCount: sortedDates.length,
+          restDays,
+          medianRestDays,
+          pattern,
+          range
+        });
+      } else if (sortedDates.length === 1) {
+        // Only one workout, cannot calculate consistency
+        categoryStats.push({
+          category,
+          workoutCount: 1,
+          restDays: [],
+          medianRestDays: 0,
+          pattern: 'Stable',
+          range: 'N/A'
+        });
+      }
+    });
+
+    return categoryStats;
+  };
+
   // Calculate sets per category for current week
   const getWeeklyCategoryStats = () => {
     const now = new Date();
@@ -581,6 +697,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
   const thisYearMonthlyData = getThisYearMonthlyData();
   const lastYearMonthlyData = getLastYearMonthlyData();
   const yearlyTrainingData = getYearlyTrainingPercentages();
+  const categoryConsistencyStats = getCategoryConsistencyStats();
 
   const categories = [
     { value: 'abs', label: 'Abs', color: 'text-yellow-800 border-yellow-300', bgColor: '#FFE6A9' },
@@ -1347,6 +1464,34 @@ export function Stats({ workouts, exercises }: StatsProps) {
           />
         ) : (
           <PieChart data={[]} size={200} emptyMessage={`No sets completed in ${lastMonthName}`} />
+        )}
+      </div>
+
+      {/* Category Consistency - Last 4 Months */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <Repeat size={20} className="text-solarized-green" />
+          Category Consistency - Last 4 Months
+        </h3>
+        {categoryConsistencyStats.length > 0 ? (
+          <BarChart
+            data={categoryConsistencyStats.map(stat => ({
+              label: categories.find(c => c.value === stat.category)?.label || stat.category,
+              value: stat.medianRestDays,
+              maxValue: Math.max(...categoryConsistencyStats.map(s => s.medianRestDays), 1),
+              color: categories.find(c => c.value === stat.category)?.bgColor || '#93a1a1',
+              workoutCount: stat.workoutCount,
+              pattern: stat.pattern,
+              range: stat.range
+            }))}
+            emptyMessage="Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)"
+          />
+        ) : (
+          <div className="flex items-center justify-center bg-solarized-base1/10 rounded-lg p-8">
+            <span className="text-sm text-solarized-base01 text-center">
+              Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)
+            </span>
+          </div>
         )}
       </div>
 
