@@ -326,200 +326,308 @@ export function Stats({ workouts, exercises }: StatsProps) {
 
   // Get exercise sessions for the last 4 months
   const getExerciseSessions = (exerciseId: string) => {
-    if (!exerciseId) return [];
-    
-    const fourMonthsAgo = new Date();
-    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
-    fourMonthsAgo.setHours(0, 0, 0, 0);
-    
-    return workouts
-      .filter(workout => 
-        new Date(workout.date) >= fourMonthsAgo &&
-        workout.sets.some(set => set.exerciseId === exerciseId)
-      )
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    try {
+      if (!exerciseId) return [];
+      
+      const fourMonthsAgo = new Date();
+      fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+      fourMonthsAgo.setHours(0, 0, 0, 0);
+      
+      return workouts
+        .filter(workout => {
+          try {
+            const workoutDate = safeParseDate(workout.date);
+            return workoutDate >= fourMonthsAgo &&
+              workout.sets.some(set => set.exerciseId === exerciseId);
+          } catch (error) {
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          try {
+            return safeParseDate(a.date).getTime() - safeParseDate(b.date).getTime();
+          } catch (error) {
+            return 0;
+          }
+        });
+    } catch (error) {
+      console.error('Error in getExerciseSessions:', error);
+      return [];
+    }
   };
 
   // Calculate sessions per month for last 4 months
   const getSessionsPerMonth = (exerciseId: string) => {
-    const sessions = getExerciseSessions(exerciseId);
-    const monthlyData: Record<string, number> = {};
-    const last4Months = [];
-    
-    for (let i = 3; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const monthKey = d.toLocaleDateString('en-US', { month: 'short' });
-      monthlyData[monthKey] = 0;
-      last4Months.push(monthKey);
-    }
-    
-    sessions.forEach(workout => {
-      const monthKey = new Date(workout.date).toLocaleDateString('en-US', { month: 'short' });
-      if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey]++;
+    try {
+      const sessions = getExerciseSessions(exerciseId);
+      const monthlyData: Record<string, number> = {};
+      const last4Months = [];
+      
+      for (let i = 3; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthKey = d.toLocaleDateString('en-US', { month: 'short' });
+        monthlyData[monthKey] = 0;
+        last4Months.push(monthKey);
       }
-    });
-    
-    return last4Months.map(month => ({
-      month,
-      count: monthlyData[month]
-    }));
+      
+      sessions.forEach(workout => {
+        try {
+          const monthKey = safeParseDate(workout.date).toLocaleDateString('en-US', { month: 'short' });
+          if (monthlyData[monthKey] !== undefined) {
+            monthlyData[monthKey]++;
+          }
+        } catch (error) {
+          console.error('Error processing session month:', error);
+        }
+      });
+      
+      return last4Months.map(month => ({
+        month,
+        count: monthlyData[month]
+      }));
+    } catch (error) {
+      console.error('Error in getSessionsPerMonth:', error);
+      return [];
+    }
   };
 
   // Calculate volume per session for last 4 months
   const getVolumePerSession = (exerciseId: string) => {
-    const sessions = getExerciseSessions(exerciseId);
-    
-    return sessions.map(workout => {
-      const volume = workout.sets
-        .filter(set => set.exerciseId === exerciseId)
-        .reduce((total, set) => total + set.reps, 0);
+    try {
+      const sessions = getExerciseSessions(exerciseId);
       
-      return {
-        date: new Date(workout.date),
-        volume
-      };
-    });
+      return sessions.map(workout => {
+        try {
+          const volume = workout.sets
+            .filter(set => set.exerciseId === exerciseId)
+            .reduce((total, set) => total + set.reps, 0);
+          
+          return {
+            date: safeParseDate(workout.date),
+            volume
+          };
+        } catch (error) {
+          console.error('Error calculating volume for session:', error);
+          return { date: new Date(), volume: 0 };
+        }
+      });
+    } catch (error) {
+      console.error('Error in getVolumePerSession:', error);
+      return [];
+    }
   };
 
   // Calculate rest days between sessions for last 4 months
   const getRestDaysBetweenSessions = (exerciseId: string) => {
-    const sessions = getExerciseSessions(exerciseId);
-    if (sessions.length < 2) return [];
-    
-    const restDaysData = [];
-    for (let i = 1; i < sessions.length; i++) {
-      const current = new Date(sessions[i].date);
-      const previous = new Date(sessions[i-1].date);
-      // Reset hours to compare only days
-      const d1 = new Date(current.getFullYear(), current.getMonth(), current.getDate());
-      const d2 = new Date(previous.getFullYear(), previous.getMonth(), previous.getDate());
-      const diffTime = Math.abs(d1.getTime() - d2.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    try {
+      const sessions = getExerciseSessions(exerciseId);
+      if (sessions.length < 2) return [];
       
-      restDaysData.push({
-        date: current,
-        days: diffDays
-      });
+      const restDaysData = [];
+      for (let i = 1; i < sessions.length; i++) {
+        try {
+          const current = safeParseDate(sessions[i].date);
+          const previous = safeParseDate(sessions[i-1].date);
+          // Reset hours to compare only days
+          const d1 = new Date(current.getFullYear(), current.getMonth(), current.getDate());
+          const d2 = new Date(previous.getFullYear(), previous.getMonth(), previous.getDate());
+          const diffTime = Math.abs(d1.getTime() - d2.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          restDaysData.push({
+            date: current,
+            days: diffDays
+          });
+        } catch (error) {
+          console.error(`Error calculating rest days at index ${i}:`, error);
+        }
+      }
+      
+      return restDaysData;
+    } catch (error) {
+      console.error('Error in getRestDaysBetweenSessions:', error);
+      return [];
     }
-    
-    return restDaysData;
+  };
+
+  // Helper function to safely parse dates (handles both Date objects and ISO strings)
+  const safeParseDate = (dateInput: Date | string): Date => {
+    try {
+      if (dateInput instanceof Date) {
+        return new Date(dateInput.getTime());
+      }
+      if (typeof dateInput === 'string') {
+        return new Date(dateInput);
+      }
+      return new Date();
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return new Date();
+    }
   };
 
   // Helper function to calculate consistency pattern based on IQR
   const getConsistencyPattern = (restDays: number[]): 'Stable' | 'Variable' | 'Irregular' => {
-    if (restDays.length < 2) return 'Stable';
-    
-    // Sort the array
-    const sorted = [...restDays].sort((a, b) => a - b);
-    
-    // Calculate quartiles
-    const q1Index = Math.floor(sorted.length * 0.25);
-    const q3Index = Math.floor(sorted.length * 0.75);
-    const q1 = sorted[q1Index];
-    const q3 = sorted[q3Index];
-    const iqr = q3 - q1;
-    
-    // Determine pattern based on IQR
-    if (iqr <= 2) return 'Stable';
-    if (iqr <= 7) return 'Variable';
-    return 'Irregular';
+    try {
+      if (!Array.isArray(restDays) || restDays.length < 2) return 'Stable';
+      
+      // Filter out invalid values
+      const validRestDays = restDays.filter(d => typeof d === 'number' && !isNaN(d) && d >= 0);
+      if (validRestDays.length < 2) return 'Stable';
+      
+      // Sort the array
+      const sorted = [...validRestDays].sort((a, b) => a - b);
+      
+      // Calculate quartiles
+      const q1Index = Math.floor(sorted.length * 0.25);
+      const q3Index = Math.floor(sorted.length * 0.75);
+      const q1 = sorted[q1Index];
+      const q3 = sorted[q3Index];
+      const iqr = q3 - q1;
+      
+      // Determine pattern based on IQR
+      if (iqr <= 2) return 'Stable';
+      if (iqr <= 7) return 'Variable';
+      return 'Irregular';
+    } catch (error) {
+      console.error('Error in getConsistencyPattern:', error);
+      return 'Stable';
+    }
   };
 
   // Calculate category consistency stats for the last 4 months (current month + last 3 months)
   const getCategoryConsistencyStats = () => {
-    const now = new Date();
-    const fourMonthsAgo = new Date(now);
-    fourMonthsAgo.setMonth(now.getMonth() - 4);
-    fourMonthsAgo.setHours(0, 0, 0, 0);
+    try {
+      const now = new Date();
+      const fourMonthsAgo = new Date(now);
+      fourMonthsAgo.setMonth(now.getMonth() - 4);
+      fourMonthsAgo.setHours(0, 0, 0, 0);
 
-    // Filter workouts for the last 4 months
-    const recentWorkouts = workouts.filter(workout => 
-      new Date(workout.date) >= fourMonthsAgo
-    );
-
-    // Group workouts by category and date
-    const categoryWorkoutDates: Record<string, Date[]> = {};
-    
-    recentWorkouts.forEach(workout => {
-      const workoutDate = new Date(workout.date.getFullYear(), workout.date.getMonth(), workout.date.getDate());
-      
-      workout.sets.forEach(set => {
-        const exercise = exercises.find(e => e.id === set.exerciseId);
-        if (exercise) {
-          if (!categoryWorkoutDates[exercise.category]) {
-            categoryWorkoutDates[exercise.category] = [];
-          }
-          // Only add unique dates for each category
-          const hasDate = categoryWorkoutDates[exercise.category].some(
-            d => d.getTime() === workoutDate.getTime()
-          );
-          if (!hasDate) {
-            categoryWorkoutDates[exercise.category].push(workoutDate);
-          }
+      // Filter workouts for the last 4 months with safe date parsing
+      const recentWorkouts = workouts.filter(workout => {
+        try {
+          const workoutDate = safeParseDate(workout.date);
+          return workoutDate >= fourMonthsAgo;
+        } catch (error) {
+          return false;
         }
       });
-    });
 
-    // Calculate rest days and metrics for each category
-    const categoryStats: Array<{
-      category: string;
-      workoutCount: number;
-      restDays: number[];
-      medianRestDays: number;
-      pattern: 'Stable' | 'Variable' | 'Irregular';
-      range: string;
-    }> = [];
-
-    Object.entries(categoryWorkoutDates).forEach(([category, dates]) => {
-      const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      // Group workouts by category and date
+      const categoryWorkoutDates: Record<string, Date[]> = {};
       
-      if (sortedDates.length >= 2) {
-        const restDays: number[] = [];
-        for (let i = 1; i < sortedDates.length; i++) {
-          const diffTime = sortedDates[i].getTime() - sortedDates[i - 1].getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          restDays.push(diffDays);
+      recentWorkouts.forEach(workout => {
+        try {
+          // Safe date parsing - handles both Date objects and strings from localStorage
+          const parsedDate = safeParseDate(workout.date);
+          const workoutDate = new Date(
+            parsedDate.getFullYear(),
+            parsedDate.getMonth(),
+            parsedDate.getDate()
+          );
+          
+          workout.sets.forEach(set => {
+            const exercise = exercises.find(e => e.id === set.exerciseId);
+            if (exercise) {
+              if (!categoryWorkoutDates[exercise.category]) {
+                categoryWorkoutDates[exercise.category] = [];
+              }
+              // Only add unique dates for each category
+              const hasDate = categoryWorkoutDates[exercise.category].some(
+                d => d.getTime() === workoutDate.getTime()
+              );
+              if (!hasDate) {
+                categoryWorkoutDates[exercise.category].push(workoutDate);
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Error processing workout for consistency stats:', error);
         }
-        
-        // Calculate median
-        const sortedRestDays = [...restDays].sort((a, b) => a - b);
-        const medianIndex = Math.floor(sortedRestDays.length / 2);
-        const medianRestDays = sortedRestDays.length % 2 === 0
-          ? (sortedRestDays[medianIndex - 1] + sortedRestDays[medianIndex]) / 2
-          : sortedRestDays[medianIndex];
-        
-        // Calculate range
-        const minRestDays = Math.min(...restDays);
-        const maxRestDays = Math.max(...restDays);
-        const range = `${minRestDays}-${maxRestDays} days`;
-        
-        // Determine pattern
-        const pattern = getConsistencyPattern(restDays);
-        
-        categoryStats.push({
-          category,
-          workoutCount: sortedDates.length,
-          restDays,
-          medianRestDays,
-          pattern,
-          range
-        });
-      } else if (sortedDates.length === 1) {
-        // Only one workout, cannot calculate consistency
-        categoryStats.push({
-          category,
-          workoutCount: 1,
-          restDays: [],
-          medianRestDays: 0,
-          pattern: 'Stable',
-          range: 'N/A'
-        });
-      }
-    });
+      });
 
-    return categoryStats;
+      // Calculate rest days and metrics for each category
+      const categoryStats: Array<{
+        category: string;
+        workoutCount: number;
+        restDays: number[];
+        medianRestDays: number;
+        pattern: 'Stable' | 'Variable' | 'Irregular';
+        range: string;
+      }> = [];
+
+      Object.entries(categoryWorkoutDates).forEach(([category, dates]) => {
+        try {
+          const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+          
+          if (sortedDates.length >= 2) {
+            const restDays: number[] = [];
+            for (let i = 1; i < sortedDates.length; i++) {
+              const diffTime = sortedDates[i].getTime() - sortedDates[i - 1].getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              if (diffDays > 0) {
+                restDays.push(diffDays);
+              }
+            }
+            
+            if (restDays.length === 0) {
+              // All workouts on same day
+              categoryStats.push({
+                category,
+                workoutCount: sortedDates.length,
+                restDays: [],
+                medianRestDays: 0,
+                pattern: 'Stable',
+                range: '0 days'
+              });
+              return;
+            }
+            
+            // Calculate median
+            const sortedRestDays = [...restDays].sort((a, b) => a - b);
+            const medianIndex = Math.floor(sortedRestDays.length / 2);
+            const medianRestDays = sortedRestDays.length % 2 === 0
+              ? (sortedRestDays[medianIndex - 1] + sortedRestDays[medianIndex]) / 2
+              : sortedRestDays[medianIndex];
+            
+            // Calculate range
+            const minRestDays = Math.min(...restDays);
+            const maxRestDays = Math.max(...restDays);
+            const range = `${minRestDays}-${maxRestDays} days`;
+            
+            // Determine pattern
+            const pattern = getConsistencyPattern(restDays);
+            
+            categoryStats.push({
+              category,
+              workoutCount: sortedDates.length,
+              restDays,
+              medianRestDays: Math.round(medianRestDays * 10) / 10,
+              pattern,
+              range
+            });
+          } else if (sortedDates.length === 1) {
+            // Only one workout, cannot calculate consistency
+            categoryStats.push({
+              category,
+              workoutCount: 1,
+              restDays: [],
+              medianRestDays: 0,
+              pattern: 'Stable',
+              range: 'N/A'
+            });
+          }
+        } catch (error) {
+          console.error(`Error calculating stats for category ${category}:`, error);
+        }
+      });
+
+      return categoryStats;
+    } catch (error) {
+      console.error('Error in getCategoryConsistencyStats:', error);
+      return [];
+    }
   };
 
   // Calculate sets per category for current week
@@ -608,96 +716,151 @@ export function Stats({ workouts, exercises }: StatsProps) {
 
   // Get max reps over time for selected exercise (last 3 years)
   const getMaxRepsOverTime = (exerciseId: string) => {
-    if (!exerciseId) return [];
-    
-    const threeYearsAgo = new Date();
-    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
-    
-    const relevantWorkouts = workouts.filter(workout => 
-      new Date(workout.date) >= threeYearsAgo &&
-      workout.sets.some(set => set.exerciseId === exerciseId)
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
-    const maxData: Array<{ date: Date; maxReps: number; setPosition: number }> = [];
-    let runningMax = 0;
-    
-    relevantWorkouts.forEach(workout => {
-      const exerciseSets = workout.sets
-        .filter(set => set.exerciseId === exerciseId)
-        .map((set, index) => ({ ...set, position: index + 1 }));
+    try {
+      if (!exerciseId) return [];
       
-      if (exerciseSets.length > 0) {
-        const workoutMax = Math.max(...exerciseSets.map(set => set.reps));
-        const maxSet = exerciseSets.find(set => set.reps === workoutMax);
-        
-        if (workoutMax > runningMax) {
-          runningMax = workoutMax;
-          maxData.push({
-            date: new Date(workout.date),
-            maxReps: workoutMax,
-            setPosition: maxSet?.position || 1
-          });
+      const threeYearsAgo = new Date();
+      threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+      
+      const relevantWorkouts = workouts.filter(workout => {
+        try {
+          return safeParseDate(workout.date) >= threeYearsAgo &&
+            workout.sets.some(set => set.exerciseId === exerciseId);
+        } catch (error) {
+          return false;
         }
-      }
-    });
-    
-    return maxData;
+      }).sort((a, b) => {
+        try {
+          return safeParseDate(a.date).getTime() - safeParseDate(b.date).getTime();
+        } catch (error) {
+          return 0;
+        }
+      });
+      
+      const maxData: Array<{ date: Date; maxReps: number; setPosition: number }> = [];
+      let runningMax = 0;
+      
+      relevantWorkouts.forEach(workout => {
+        try {
+          const exerciseSets = workout.sets
+            .filter(set => set.exerciseId === exerciseId)
+            .map((set, index) => ({ ...set, position: index + 1 }));
+          
+          if (exerciseSets.length > 0) {
+            const workoutMax = Math.max(...exerciseSets.map(set => set.reps));
+            const maxSet = exerciseSets.find(set => set.reps === workoutMax);
+            
+            if (workoutMax > runningMax) {
+              runningMax = workoutMax;
+              maxData.push({
+                date: safeParseDate(workout.date),
+                maxReps: workoutMax,
+                setPosition: maxSet?.position || 1
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error processing workout for max reps:', error);
+        }
+      });
+      
+      return maxData;
+    } catch (error) {
+      console.error('Error in getMaxRepsOverTime:', error);
+      return [];
+    }
   };
 
   // Generate chart points for area chart
   const generateChartData = (exerciseId: string) => {
-    const maxData = getMaxRepsOverTime(exerciseId);
-    if (maxData.length === 0) return [];
-    
-    // Create a more complete timeline
-    const chartData = [];
-    let currentMax = 0;
-    
-    // Start from 3 years ago
-    const startDate = new Date();
-    startDate.setFullYear(startDate.getFullYear() - 3);
-    
-    // Add initial point
-    chartData.push({
-      date: startDate,
-      maxReps: 0,
-      setPosition: 0
-    });
-    
-    // Add all max improvement points
-    maxData.forEach(point => {
-      chartData.push(point);
-      currentMax = point.maxReps;
-    });
-    
-    // Add current point if needed
-    const lastPoint = maxData[maxData.length - 1];
-    const today = new Date();
-    if (!lastPoint || lastPoint.date.toDateString() !== today.toDateString()) {
+    try {
+      const maxData = getMaxRepsOverTime(exerciseId);
+      if (!Array.isArray(maxData) || maxData.length === 0) return [];
+      
+      // Create a more complete timeline
+      const chartData = [];
+      let currentMax = 0;
+      
+      // Start from 3 years ago
+      const startDate = new Date();
+      startDate.setFullYear(startDate.getFullYear() - 3);
+      
+      // Add initial point
       chartData.push({
-        date: today,
-        maxReps: currentMax,
-        setPosition: lastPoint?.setPosition || 0
+        date: startDate,
+        maxReps: 0,
+        setPosition: 0
       });
+      
+      // Add all max improvement points
+      maxData.forEach(point => {
+        try {
+          chartData.push(point);
+          currentMax = point.maxReps;
+        } catch (error) {
+          console.error('Error adding chart point:', error);
+        }
+      });
+      
+      // Add current point if needed
+      const lastPoint = maxData[maxData.length - 1];
+      const today = new Date();
+      if (!lastPoint || lastPoint.date.toDateString() !== today.toDateString()) {
+        chartData.push({
+          date: today,
+          maxReps: currentMax,
+          setPosition: lastPoint?.setPosition || 0
+        });
+      }
+      
+      return chartData;
+    } catch (error) {
+      console.error('Error in generateChartData:', error);
+      return [];
     }
-    
-    return chartData;
   };
 
-  const exerciseStats = getExerciseStats(selectedYear);
-  const availableYears = getAvailableYears();
-  const weeklyData = getWeeklyData();
-  const maxSets = Math.max(...weeklyData.map(d => d.sets), 1);
-  const weekPercentage = getCurrentWeekPercentage();
-  const monthPercentage = getCurrentMonthPercentage();
-  const yearPercentage = getCurrentYearPercentage();
-  const weeklyCategoryStats = getWeeklyCategoryStats();
-  const monthlyCategoryStats = getMonthlyCategoryStats();
-  const lastMonthlyCategoryStats = getLastMonthlyCategoryStats();
-  const thisYearMonthlyData = getThisYearMonthlyData();
-  const lastYearMonthlyData = getLastYearMonthlyData();
-  const yearlyTrainingData = getYearlyTrainingPercentages();
-  const categoryConsistencyStats = getCategoryConsistencyStats();
+  // Safely calculate all stats with error handling
+  let exerciseStats: Array<{ exercise?: typeof exercises[0]; count: number }> = [];
+  let availableYears: number[] = [];
+  let weeklyData: Array<{ date: Date; sets: number; reps: number }> = [];
+  let maxSets = 1;
+  let weekPercentage = 0;
+  let monthPercentage = 0;
+  let yearPercentage = 0;
+  let weeklyCategoryStats: Record<string, number> = {};
+  let monthlyCategoryStats: Record<string, number> = {};
+  let lastMonthlyCategoryStats: Record<string, number> = {};
+  let thisYearMonthlyData: Array<{ month: string; percentage: number; workoutDays: number; totalDays: number }> = [];
+  let lastYearMonthlyData: Array<{ month: string; percentage: number; workoutDays: number; totalDays: number }> = [];
+  let yearlyTrainingData: Array<{ year: number; percentage: number; workoutDays: number; totalDays: number; isCurrent: boolean }> = [];
+  let categoryConsistencyStats: Array<{
+    category: string;
+    workoutCount: number;
+    restDays: number[];
+    medianRestDays: number;
+    pattern: 'Stable' | 'Variable' | 'Irregular';
+    range: string;
+  }> = [];
+
+  try {
+    exerciseStats = getExerciseStats(selectedYear);
+    availableYears = getAvailableYears();
+    weeklyData = getWeeklyData();
+    maxSets = Math.max(...weeklyData.map(d => d.sets), 1);
+    weekPercentage = getCurrentWeekPercentage();
+    monthPercentage = getCurrentMonthPercentage();
+    yearPercentage = getCurrentYearPercentage();
+    weeklyCategoryStats = getWeeklyCategoryStats();
+    monthlyCategoryStats = getMonthlyCategoryStats();
+    lastMonthlyCategoryStats = getLastMonthlyCategoryStats();
+    thisYearMonthlyData = getThisYearMonthlyData();
+    lastYearMonthlyData = getLastYearMonthlyData();
+    yearlyTrainingData = getYearlyTrainingPercentages();
+    categoryConsistencyStats = getCategoryConsistencyStats();
+  } catch (error) {
+    console.error('Error calculating stats:', error);
+  }
 
   const categories = [
     { value: 'abs', label: 'Abs', color: 'text-yellow-800 border-yellow-300', bgColor: '#FFE6A9' },
@@ -1473,26 +1636,54 @@ export function Stats({ workouts, exercises }: StatsProps) {
           <Repeat size={20} className="text-solarized-green" />
           Category Consistency - Last 4 Months
         </h3>
-        {categoryConsistencyStats.length > 0 ? (
-          <BarChart
-            data={categoryConsistencyStats.map(stat => ({
-              label: categories.find(c => c.value === stat.category)?.label || stat.category,
-              value: stat.medianRestDays,
-              maxValue: Math.max(...categoryConsistencyStats.map(s => s.medianRestDays), 1),
-              color: categories.find(c => c.value === stat.category)?.bgColor || '#93a1a1',
-              workoutCount: stat.workoutCount,
-              pattern: stat.pattern,
-              range: stat.range
-            }))}
-            emptyMessage="Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)"
-          />
-        ) : (
-          <div className="flex items-center justify-center bg-solarized-base1/10 rounded-lg p-8">
-            <span className="text-sm text-solarized-base01 text-center">
-              Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)
-            </span>
-          </div>
-        )}
+        {(() => {
+          try {
+            if (!Array.isArray(categoryConsistencyStats) || categoryConsistencyStats.length === 0) {
+              return (
+                <div className="flex items-center justify-center bg-solarized-base1/10 rounded-lg p-8">
+                  <span className="text-sm text-solarized-base01 text-center">
+                    Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)
+                  </span>
+                </div>
+              );
+            }
+
+            // Safely calculate max value
+            const maxMedianRestDays = Math.max(
+              ...categoryConsistencyStats.map(s => typeof s.medianRestDays === 'number' ? s.medianRestDays : 0),
+              1
+            );
+
+            const chartData = categoryConsistencyStats.map(stat => {
+              const category = categories.find(c => c.value === stat.category);
+              return {
+                label: category?.label || stat.category || 'Unknown',
+                value: typeof stat.medianRestDays === 'number' ? stat.medianRestDays : 0,
+                maxValue: maxMedianRestDays,
+                color: category?.bgColor || '#93a1a1',
+                workoutCount: typeof stat.workoutCount === 'number' ? stat.workoutCount : 0,
+                pattern: stat.pattern || 'Stable',
+                range: stat.range || 'N/A'
+              };
+            });
+
+            return (
+              <BarChart
+                data={chartData}
+                emptyMessage="Insufficient data for consistency analysis (need at least 2 workouts per category in the last 4 months)"
+              />
+            );
+          } catch (error) {
+            console.error('Error rendering consistency chart:', error);
+            return (
+              <div className="flex items-center justify-center bg-solarized-base1/10 rounded-lg p-8">
+                <span className="text-sm text-solarized-base01 text-center">
+                  Unable to display consistency chart. Please check console for details.
+                </span>
+              </div>
+            );
+          }
+        })()}
       </div>
 
       {/* Exercise Breakdown with Year Filter */}
