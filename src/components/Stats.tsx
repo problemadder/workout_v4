@@ -14,6 +14,22 @@ interface StatsProps {
   exercises: Exercise[];
 }
 
+type ConsistencyPattern = 'Stable' | 'Variable' | 'Irregular';
+
+type CategoryConsistencyStats = {
+  medianRestDays: number;
+  workoutCount: number;
+  pattern: ConsistencyPattern;
+  range: string;
+};
+
+type CategoryConsistencyTrend = {
+  recentMedian: number;
+  pastMedian: number;
+  trend: 'improving' | 'declining' | 'stable' | 'insufficient';
+  trendPercentage: number;
+};
+
 export function Stats({ workouts, exercises }: StatsProps) {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
@@ -330,6 +346,30 @@ export function Stats({ workouts, exercises }: StatsProps) {
     }
   };
 
+  const calculateMedian = (values: number[]) => {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+  };
+
+  const getConsistencyPattern = (restDays: number[]): ConsistencyPattern => {
+    if (restDays.length < 2) return 'Stable';
+
+    const sorted = [...restDays].sort((a, b) => a - b);
+    const q1Index = Math.floor(sorted.length * 0.25);
+    const q3Index = Math.floor(sorted.length * 0.75);
+    const q1 = sorted[q1Index];
+    const q3 = sorted[q3Index];
+    const iqr = q3 - q1;
+
+    if (iqr <= 2) return 'Stable';
+    if (iqr <= 7) return 'Variable';
+    return 'Irregular';
+  };
+
   const getExerciseSessions = (exerciseId: string) => {
     try {
       if (!exerciseId) return [];
@@ -502,6 +542,125 @@ export function Stats({ workouts, exercises }: StatsProps) {
     return categoryCounts;
   };
 
+  const getCategoryConsistencyStats = (): Record<string, CategoryConsistencyStats> => {
+    const fourMonthsAgo = new Date();
+    fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+    fourMonthsAgo.setHours(0, 0, 0, 0);
+
+    const recentWorkouts = workouts.filter(workout => safeParseDate(workout.date) >= fourMonthsAgo);
+    const stats: Record<string, CategoryConsistencyStats> = {};
+
+    categories.forEach(category => {
+      const categoryWorkouts = recentWorkouts.filter(workout =>
+        workout.sets.some(set => exercises.find(e => e.id === set.exerciseId)?.category === category.value)
+      );
+
+      const sorted = [...categoryWorkouts].sort(
+        (a, b) => safeParseDate(a.date).getTime() - safeParseDate(b.date).getTime()
+      );
+
+      const restDays: number[] = [];
+      for (let i = 1; i < sorted.length; i++) {
+        const diffDays = Math.ceil(
+          Math.abs(
+            safeParseDate(sorted[i].date).getTime() - safeParseDate(sorted[i - 1].date).getTime()
+          ) / (1000 * 60 * 60 * 24)
+        );
+        restDays.push(diffDays);
+      }
+
+      const medianRestDays = calculateMedian(restDays);
+      const minRestDays = restDays.length > 0 ? Math.min(...restDays) : 0;
+      const maxRestDays = restDays.length > 0 ? Math.max(...restDays) : 0;
+      const range = restDays.length === 0
+        ? 'N/A'
+        : minRestDays === maxRestDays
+          ? `${minRestDays} ${minRestDays === 1 ? 'day' : 'days'}`
+          : `${minRestDays}-${maxRestDays} days`;
+
+      stats[category.value] = {
+        medianRestDays: Math.round(medianRestDays * 10) / 10,
+        workoutCount: categoryWorkouts.length,
+        pattern: getConsistencyPattern(restDays),
+        range
+      };
+    });
+
+    return stats;
+  };
+
+  const getConsistencyTrends = (): Record<string, CategoryConsistencyTrend> => {
+    const now = new Date();
+    const sixWeeksAgo = new Date(now.getTime() - 6 * 7 * 24 * 60 * 60 * 1000);
+    const previousPeriodEnd = new Date(sixWeeksAgo.getTime() - 6 * 7 * 24 * 60 * 60 * 1000);
+
+    const recentWorkouts = workouts.filter(workout => safeParseDate(workout.date) >= sixWeeksAgo);
+    const pastWorkouts = workouts.filter(workout => {
+      const workoutDate = safeParseDate(workout.date);
+      return workoutDate >= previousPeriodEnd && workoutDate < sixWeeksAgo;
+    });
+
+    const result: Record<string, CategoryConsistencyTrend> = {};
+
+    const calculateMedianForWorkouts = (categoryWorkouts: Workout[]) => {
+      if (categoryWorkouts.length < 2) return 0;
+
+      const restDays: number[] = [];
+      const sorted = [...categoryWorkouts].sort(
+        (a, b) => safeParseDate(a.date).getTime() - safeParseDate(b.date).getTime()
+      );
+
+      for (let i = 1; i < sorted.length; i++) {
+        const diffDays = Math.ceil(
+          Math.abs(
+            safeParseDate(sorted[i].date).getTime() - safeParseDate(sorted[i - 1].date).getTime()
+          ) / (1000 * 60 * 60 * 24)
+        );
+        restDays.push(diffDays);
+      }
+
+      if (restDays.length === 0) return 0;
+      return calculateMedian(restDays);
+    };
+
+    categories.forEach(category => {
+      const recentCategoryWorkouts = recentWorkouts.filter(workout =>
+        workout.sets.some(set => exercises.find(e => e.id === set.exerciseId)?.category === category.value)
+      );
+
+      const pastCategoryWorkouts = pastWorkouts.filter(workout =>
+        workout.sets.some(set => exercises.find(e => e.id === set.exerciseId)?.category === category.value)
+      );
+
+      const recentMedian = calculateMedianForWorkouts(recentCategoryWorkouts);
+      const pastMedian = calculateMedianForWorkouts(pastCategoryWorkouts);
+
+      let trend: CategoryConsistencyTrend['trend'] = 'insufficient';
+      let trendPercentage = 0;
+
+      if (recentCategoryWorkouts.length >= 2 && pastCategoryWorkouts.length >= 2) {
+        if (recentMedian < pastMedian) {
+          trend = 'improving';
+          trendPercentage = pastMedian > 0 ? ((pastMedian - recentMedian) / pastMedian) * 100 : 0;
+        } else if (recentMedian > pastMedian) {
+          trend = 'declining';
+          trendPercentage = pastMedian > 0 ? ((recentMedian - pastMedian) / pastMedian) * 100 : 0;
+        } else {
+          trend = 'stable';
+        }
+      }
+
+      result[category.value] = {
+        recentMedian,
+        pastMedian,
+        trend,
+        trendPercentage
+      };
+    });
+
+    return result;
+  };
+
   const getMaxRepsOverTime = (exerciseId: string) => {
     try {
       if (!exerciseId) return [];
@@ -614,6 +773,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
   let thisYearMonthlyData: Array<{ month: string; percentage: number; workoutDays: number; totalDays: number }> = [];
   let lastYearMonthlyData: Array<{ month: string; percentage: number; workoutDays: number; totalDays: number }> = [];
   let yearlyTrainingData: Array<{ year: number; percentage: number; workoutDays: number; totalDays: number; isCurrent: boolean }> = [];
+  let categoryConsistencyStats: Record<string, CategoryConsistencyStats> = {};
+  let consistencyTrends: Record<string, CategoryConsistencyTrend> = {};
 
   try {
     exerciseStats = getExerciseStats(selectedYear);
@@ -646,6 +807,13 @@ export function Stats({ workouts, exercises }: StatsProps) {
 
   const sortedCategories = [...categories].sort((a, b) => a.label.localeCompare(b.label));
   const sortedExercises = [...exercises].sort((a, b) => a.name.localeCompare(b.name));
+
+  try {
+    categoryConsistencyStats = getCategoryConsistencyStats();
+    consistencyTrends = getConsistencyTrends();
+  } catch (error) {
+    console.error('Error calculating consistency trends:', error);
+  }
 
   const searchFilteredExercises = searchQuery.trim()
     ? sortedExercises.filter(exercise => {
@@ -762,6 +930,21 @@ export function Stats({ workouts, exercises }: StatsProps) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Category Consistency */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <Activity size={20} className="text-solarized-orange" />
+          Category Consistency - Last 4 Months
+        </h3>
+        <BarChart
+          data={categoryConsistencyStats}
+          categories={categories}
+          trendData={consistencyTrends}
+          title="Workout Frequency Patterns"
+          emptyMessage="Need at least 2 workouts in a category for consistency analysis"
+        />
       </div>
 
       {/* Exercise Chart Selector */}
