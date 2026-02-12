@@ -1,7 +1,8 @@
 import React from 'react';
-import { Calendar, Target, TrendingUp, Percent, Play } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Percent, Play, Clock, Hash } from 'lucide-react';
 import { Workout, WorkoutStats, Exercise } from '../types';
 import { formatDate, isToday, getDaysAgo } from '../utils/dateUtils';
+import { sumDurations, secondsToDuration } from '../utils/durationUtils';
 
 interface DashboardProps {
   workouts: Workout[];
@@ -181,15 +182,32 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
             return (
               <div className="space-y-3">
                 {recentWorkouts.map((workout) => {
-                  // Group exercises by exerciseId and count sets
+                  // Group exercises by exerciseId and collect set data
                   const exerciseGroups = workout.sets.reduce((groups, set) => {
                     const exerciseId = set.exerciseId;
                     if (!groups[exerciseId]) {
-                      groups[exerciseId] = { count: 0, exerciseId };
+                      const exercise = exercises.find(ex => ex.id === exerciseId);
+                      groups[exerciseId] = { 
+                        count: 0, 
+                        exerciseId, 
+                        exercise,
+                        totalReps: 0,
+                        durations: [] as string[]
+                      };
                     }
                     groups[exerciseId].count++;
+                    groups[exerciseId].totalReps += set.reps;
+                    if (set.duration) {
+                      groups[exerciseId].durations.push(set.duration);
+                    }
                     return groups;
-                  }, {} as Record<string, { count: number; exerciseId: string }>);
+                  }, {} as Record<string, { 
+                    count: number; 
+                    exerciseId: string; 
+                    exercise?: Exercise;
+                    totalReps: number;
+                    durations: string[]
+                  }>);
 
                   const groupedExercises = Object.values(exerciseGroups);
 
@@ -214,10 +232,25 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
                       </div>
                       <div className="space-y-1">
                         {groupedExercises.map((group, index) => {
-                          const exerciseName = exercises.find(ex => ex.id === group.exerciseId)?.name || 'Unknown Exercise';
+                          const isTimeExercise = group.exercise?.exerciseType === 'time';
+                          const totalDuration = group.durations.length > 0 
+                            ? secondsToDuration(sumDurations(group.durations))
+                            : '00:00';
+                          
                           return (
-                            <div key={index} className="text-sm text-solarized-base01">
-                              {exerciseName} - {group.count} {group.count === 1 ? 'set' : 'sets'}
+                            <div key={index} className="text-sm text-solarized-base01 flex items-center gap-1">
+                              {group.exercise?.name || 'Unknown Exercise'} - {group.count} {group.count === 1 ? 'set' : 'sets'}
+                              {isTimeExercise ? (
+                                <span className="inline-flex items-center gap-1 text-solarized-cyan ml-1">
+                                  <Clock size={12} />
+                                  {totalDuration}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-solarized-base01 ml-1">
+                                  <Hash size={12} />
+                                  {group.totalReps} reps
+                                </span>
+                              )}
                             </div>
                           );
                         })}
