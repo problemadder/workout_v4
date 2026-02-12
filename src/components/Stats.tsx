@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart, Search, X, Clock, Repeat, Timer } from 'lucide-react';
+import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart, Search, X, Clock, Repeat, Timer, Hash } from 'lucide-react';
 import { Workout, Exercise } from '../types';
 import { formatShortDate } from '../utils/dateUtils';
 import { formatSingleDecimal } from '../utils/formatUtils';
+import { sumDurations, secondsToDuration, durationToSeconds } from '../utils/durationUtils';
 import { PieChart } from './PieChart';
 import { BarChart } from './BarChart';
 import { ExerciseConsistencyChart } from './ExerciseConsistencyChart';
@@ -65,7 +66,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
     return Array.from(years).sort((a, b) => b - a);
   };
 
-  const getExerciseYearComparison = (exerciseId: string) => {
+  const getExerciseYearComparison = (exerciseId: string, isTimeExercise: boolean) => {
     const currentYear = new Date().getFullYear();
     const lastYear = currentYear - 1;
     
@@ -76,60 +77,127 @@ export function Stats({ workouts, exercises }: StatsProps) {
       new Date(workout.date).getFullYear() === lastYear
     );
     
-    const currentYearReps = currentYearWorkouts.reduce((total, workout) => {
-      return total + workout.sets
-        .filter(set => set.exerciseId === exerciseId)
-        .reduce((setTotal, set) => setTotal + set.reps, 0);
-    }, 0);
+    // Get all sets for this exercise in each year
+    const currentYearSets = currentYearWorkouts.flatMap(workout => 
+      workout.sets.filter(set => set.exerciseId === exerciseId)
+    );
+    const lastYearSets = lastYearWorkouts.flatMap(workout => 
+      workout.sets.filter(set => set.exerciseId === exerciseId)
+    );
     
-    const lastYearReps = lastYearWorkouts.reduce((total, workout) => {
-      return total + workout.sets
-        .filter(set => set.exerciseId === exerciseId)
-        .reduce((setTotal, set) => setTotal + set.reps, 0);
-    }, 0);
+    let currentYearTotal: number;
+    let lastYearTotal: number;
+    let currentYearDailyAvg: number | string;
+    let lastYearDailyAvg: number | string;
+    let currentYearPerDay: number | string;
+    let lastYearPerDay: number | string;
     
-    const currentYearWorkoutDays = new Set(
-      currentYearWorkouts
-        .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
-        .map(workout => new Date(workout.date).toDateString())
-    ).size;
-    
-    const lastYearWorkoutDays = new Set(
-      lastYearWorkouts
-        .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
-        .map(workout => new Date(workout.date).toDateString())
-    ).size;
-    
-    const currentYearDailyAvg = currentYearWorkoutDays > 0 ? formatSingleDecimal(currentYearReps / currentYearWorkoutDays) : 0;
-    const lastYearDailyAvg = lastYearWorkoutDays > 0 ? formatSingleDecimal(lastYearReps / lastYearWorkoutDays) : 0;
-    
-    const today = new Date();
-    const currentYearTotalDays = today.getFullYear() === currentYear 
-      ? Math.floor((today.getTime() - new Date(currentYear, 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1
-      : 365;
-    const lastYearTotalDays = 365;
-    
-    const currentYearRepsPerDay = formatSingleDecimal(currentYearReps / currentYearTotalDays);
-    const lastYearRepsPerDay = formatSingleDecimal(lastYearReps / lastYearTotalDays);
-    
-    return {
-      currentYear: {
-        year: currentYear,
-        totalReps: currentYearReps,
-        workoutDays: currentYearWorkoutDays,
-        dailyAverage: currentYearDailyAvg,
-        repsPerDay: currentYearRepsPerDay,
-        totalDays: currentYearTotalDays
-      },
-      lastYear: {
-        year: lastYear,
-        totalReps: lastYearReps,
-        workoutDays: lastYearWorkoutDays,
-        dailyAverage: lastYearDailyAvg,
-        repsPerDay: lastYearRepsPerDay,
-        totalDays: lastYearTotalDays
-      }
-    };
+    if (isTimeExercise) {
+      // For time exercises, calculate total duration in seconds
+      const currentYearDurations = currentYearSets.map(set => set.duration || '00:00');
+      const lastYearDurations = lastYearSets.map(set => set.duration || '00:00');
+      
+      currentYearTotal = sumDurations(currentYearDurations);
+      lastYearTotal = sumDurations(lastYearDurations);
+      
+      const currentYearWorkoutDays = new Set(
+        currentYearWorkouts
+          .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
+          .map(workout => new Date(workout.date).toDateString())
+      ).size;
+      
+      const lastYearWorkoutDays = new Set(
+        lastYearWorkouts
+          .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
+          .map(workout => new Date(workout.date).toDateString())
+      ).size;
+      
+      currentYearDailyAvg = currentYearWorkoutDays > 0 ? secondsToDuration(Math.round(currentYearTotal / currentYearWorkoutDays)) : '00:00';
+      lastYearDailyAvg = lastYearWorkoutDays > 0 ? secondsToDuration(Math.round(lastYearTotal / lastYearWorkoutDays)) : '00:00';
+      
+      const today = new Date();
+      const currentYearTotalDays = today.getFullYear() === currentYear 
+        ? Math.floor((today.getTime() - new Date(currentYear, 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : 365;
+      const lastYearTotalDays = 365;
+      
+      currentYearPerDay = secondsToDuration(Math.round(currentYearTotal / currentYearTotalDays));
+      lastYearPerDay = secondsToDuration(Math.round(lastYearTotal / lastYearTotalDays));
+      
+      return {
+        currentYear: {
+          year: currentYear,
+          totalValue: currentYearTotal,
+          totalDisplay: secondsToDuration(currentYearTotal),
+          workoutDays: currentYearWorkoutDays,
+          dailyAverage: currentYearDailyAvg,
+          perDay: currentYearPerDay,
+          totalDays: currentYearTotalDays,
+          isTimeExercise: true
+        },
+        lastYear: {
+          year: lastYear,
+          totalValue: lastYearTotal,
+          totalDisplay: secondsToDuration(lastYearTotal),
+          workoutDays: lastYearWorkoutDays,
+          dailyAverage: lastYearDailyAvg,
+          perDay: lastYearPerDay,
+          totalDays: lastYearTotalDays,
+          isTimeExercise: true
+        }
+      };
+    } else {
+      // For reps exercises, use existing logic
+      currentYearTotal = currentYearSets.reduce((total, set) => total + set.reps, 0);
+      lastYearTotal = lastYearSets.reduce((total, set) => total + set.reps, 0);
+      
+      const currentYearWorkoutDays = new Set(
+        currentYearWorkouts
+          .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
+          .map(workout => new Date(workout.date).toDateString())
+      ).size;
+      
+      const lastYearWorkoutDays = new Set(
+        lastYearWorkouts
+          .filter(workout => workout.sets.some(set => set.exerciseId === exerciseId))
+          .map(workout => new Date(workout.date).toDateString())
+      ).size;
+      
+      currentYearDailyAvg = currentYearWorkoutDays > 0 ? formatSingleDecimal(currentYearTotal / currentYearWorkoutDays) : 0;
+      lastYearDailyAvg = lastYearWorkoutDays > 0 ? formatSingleDecimal(lastYearTotal / lastYearWorkoutDays) : 0;
+      
+      const today = new Date();
+      const currentYearTotalDays = today.getFullYear() === currentYear 
+        ? Math.floor((today.getTime() - new Date(currentYear, 0, 1).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : 365;
+      const lastYearTotalDays = 365;
+      
+      currentYearPerDay = formatSingleDecimal(currentYearTotal / currentYearTotalDays);
+      lastYearPerDay = formatSingleDecimal(lastYearTotal / lastYearTotalDays);
+      
+      return {
+        currentYear: {
+          year: currentYear,
+          totalValue: currentYearTotal,
+          totalDisplay: currentYearTotal,
+          workoutDays: currentYearWorkoutDays,
+          dailyAverage: currentYearDailyAvg,
+          perDay: currentYearPerDay,
+          totalDays: currentYearTotalDays,
+          isTimeExercise: false
+        },
+        lastYear: {
+          year: lastYear,
+          totalValue: lastYearTotal,
+          totalDisplay: lastYearTotal,
+          workoutDays: lastYearWorkoutDays,
+          dailyAverage: lastYearDailyAvg,
+          perDay: lastYearPerDay,
+          totalDays: lastYearTotalDays,
+          isTimeExercise: false
+        }
+      };
+    }
   };
 
   const getWeeklyData = () => {
@@ -436,23 +504,36 @@ export function Stats({ workouts, exercises }: StatsProps) {
     }
   };
 
-  const getVolumePerSession = (exerciseId: string) => {
+  const getVolumePerSession = (exerciseId: string, isTimeExercise: boolean) => {
     try {
       const sessions = getExerciseSessions(exerciseId);
       
       return sessions.map(workout => {
         try {
-          const volume = workout.sets
-            .filter(set => set.exerciseId === exerciseId)
-            .reduce((total, set) => total + set.reps, 0);
+          const exerciseSets = workout.sets.filter(set => set.exerciseId === exerciseId);
+          let volume: number;
+          let display: string;
+          
+          if (isTimeExercise) {
+            // For time exercises, sum durations in seconds
+            const durations = exerciseSets.map(set => set.duration || '00:00');
+            volume = sumDurations(durations);
+            display = secondsToDuration(volume);
+          } else {
+            // For reps exercises, sum reps
+            volume = exerciseSets.reduce((total, set) => total + set.reps, 0);
+            display = volume.toString();
+          }
           
           return {
             date: safeParseDate(workout.date),
-            volume
+            volume,
+            display,
+            isTimeExercise
           };
         } catch (error) {
           console.error('Error calculating volume for session:', error);
-          return { date: new Date(), volume: 0 };
+          return { date: new Date(), volume: 0, display: isTimeExercise ? '00:00' : '0', isTimeExercise };
         }
       });
     } catch (error) {
@@ -661,7 +742,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
     return result;
   };
 
-  const getMaxRepsOverTime = (exerciseId: string) => {
+  const getMaxRepsOverTime = (exerciseId: string, isTimeExercise: boolean) => {
     try {
       if (!exerciseId) return [];
       
@@ -683,7 +764,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
         }
       });
       
-      const maxData: Array<{ date: Date; maxReps: number; setPosition: number }> = [];
+      const maxData: Array<{ date: Date; maxValue: number; maxDisplay: string; setPosition: number; isTimeExercise: boolean }> = [];
       let runningMax = 0;
       
       relevantWorkouts.forEach(workout => {
@@ -693,15 +774,27 @@ export function Stats({ workouts, exercises }: StatsProps) {
             .map((set, index) => ({ ...set, position: index + 1 }));
           
           if (exerciseSets.length > 0) {
-            const workoutMax = Math.max(...exerciseSets.map(set => set.reps));
-            const maxSet = exerciseSets.find(set => set.reps === workoutMax);
+            let workoutMax: number;
+            let maxSet: typeof exerciseSets[0] | undefined;
+            
+            if (isTimeExercise) {
+              // For time exercises, find max duration in seconds
+              workoutMax = Math.max(...exerciseSets.map(set => durationToSeconds(set.duration || '00:00')));
+              maxSet = exerciseSets.find(set => durationToSeconds(set.duration || '00:00') === workoutMax);
+            } else {
+              // For reps exercises, find max reps
+              workoutMax = Math.max(...exerciseSets.map(set => set.reps));
+              maxSet = exerciseSets.find(set => set.reps === workoutMax);
+            }
             
             if (workoutMax > runningMax) {
               runningMax = workoutMax;
               maxData.push({
                 date: safeParseDate(workout.date),
-                maxReps: workoutMax,
-                setPosition: maxSet?.position || 1
+                maxValue: workoutMax,
+                maxDisplay: isTimeExercise ? secondsToDuration(workoutMax) : workoutMax.toString(),
+                setPosition: maxSet?.position || 1,
+                isTimeExercise
               });
             }
           }
@@ -717,9 +810,9 @@ export function Stats({ workouts, exercises }: StatsProps) {
     }
   };
 
-  const generateChartData = (exerciseId: string) => {
+  const generateChartData = (exerciseId: string, isTimeExercise: boolean) => {
     try {
-      const maxData = getMaxRepsOverTime(exerciseId);
+      const maxData = getMaxRepsOverTime(exerciseId, isTimeExercise);
       if (!Array.isArray(maxData) || maxData.length === 0) return [];
       
       const chartData = [];
@@ -730,14 +823,15 @@ export function Stats({ workouts, exercises }: StatsProps) {
       
       chartData.push({
         date: startDate,
-        maxReps: 0,
+        maxValue: 0,
+        maxDisplay: isTimeExercise ? '00:00' : '0',
         setPosition: 0
       });
       
       maxData.forEach(point => {
         try {
           chartData.push(point);
-          currentMax = point.maxReps;
+          currentMax = point.maxValue;
         } catch (error) {
           console.error('Error adding chart point:', error);
         }
@@ -748,7 +842,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
       if (!lastPoint || lastPoint.date.toDateString() !== today.toDateString()) {
         chartData.push({
           date: today,
-          maxReps: currentMax,
+          maxValue: currentMax,
+          maxDisplay: isTimeExercise ? secondsToDuration(currentMax) : currentMax.toString(),
           setPosition: lastPoint?.setPosition || 0
         });
       }
@@ -845,12 +940,13 @@ export function Stats({ workouts, exercises }: StatsProps) {
     }
   }, [searchFilteredExercises, searchQuery, selectedExerciseId, sortedExercises]);
 
-  const exerciseComparison = selectedExerciseId ? getExerciseYearComparison(selectedExerciseId) : null;
   const selectedExercise = exercises.find(e => e.id === selectedExerciseId);
-  const maxChartData = selectedExerciseId ? generateChartData(selectedExerciseId) : [];
+  const isTimeExercise = selectedExercise?.exerciseType === 'time';
+  const exerciseComparison = selectedExerciseId ? getExerciseYearComparison(selectedExerciseId, isTimeExercise) : null;
+  const maxChartData = selectedExerciseId ? generateChartData(selectedExerciseId, isTimeExercise) : [];
   const maxChartExercise = selectedExercise;
   const sessionsPerMonth = selectedExerciseId ? getSessionsPerMonth(selectedExerciseId) : [];
-  const volumePerSession = selectedExerciseId ? getVolumePerSession(selectedExerciseId) : [];
+  const volumePerSession = selectedExerciseId ? getVolumePerSession(selectedExerciseId, isTimeExercise) : [];
   const consistencyData = useExerciseConsistencyData(workouts, selectedExerciseId, consistencyPeriod);
   const yearComparisonData = useExerciseYearComparison(workouts, selectedExerciseId);
 
@@ -903,32 +999,57 @@ export function Stats({ workouts, exercises }: StatsProps) {
           Last 7 Days
         </h3>
         <div className="space-y-3">
-          {weeklyData.map((day, index) => (
-            <div key={index} className="flex items-center gap-3">
-              <div className="w-16 text-xs text-solarized-base01">
-                <div className="font-medium">
-                  {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+          {weeklyData.map((day, index) => {
+            // Get workouts for this day
+            const dayWorkouts = workouts.filter(w => 
+              new Date(w.date).toDateString() === day.date.toDateString()
+            );
+            
+            // Calculate total duration from time-based exercises
+            const totalDurationSeconds = dayWorkouts.reduce((total, workout) => {
+              return total + workout.sets.reduce((setTotal, set) => {
+                const exercise = exercises.find(e => e.id === set.exerciseId);
+                if (exercise?.exerciseType === 'time' && set.duration) {
+                  return setTotal + durationToSeconds(set.duration);
+                }
+                return setTotal;
+              }, 0);
+            }, 0);
+            
+            const hasTimeExercises = totalDurationSeconds > 0;
+            const durationDisplay = secondsToDuration(totalDurationSeconds);
+            
+            return (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-16 text-xs text-solarized-base01">
+                  <div className="font-medium">
+                    {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div>{formatShortDate(day.date)}</div>
                 </div>
-                <div>{formatShortDate(day.date)}</div>
-              </div>
-              <div className="flex-1 bg-solarized-base1/20 rounded-full h-6 relative overflow-hidden">
-                {day.sets > 0 && (
-                  <div
-                    className="bg-solarized-blue h-full rounded-full transition-all duration-300"
-                    style={{ width: `${(day.sets / maxSets) * 100}%` }}
-                  />
-                )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-medium text-solarized-base02">
-                    {day.sets > 0 ? `${day.sets} sets` : 'Rest'}
-                  </span>
+                <div className="flex-1 bg-solarized-base1/20 rounded-full h-6 relative overflow-hidden">
+                  {day.sets > 0 && (
+                    <div
+                      className="bg-solarized-blue h-full rounded-full transition-all duration-300"
+                      style={{ width: `${(day.sets / maxSets) * 100}%` }}
+                    />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-solarized-base02">
+                      {day.sets > 0 ? `${day.sets} sets` : 'Rest'}
+                    </span>
+                  </div>
+                </div>
+                <div className="w-20 text-xs text-solarized-base01 text-right">
+                  {hasTimeExercises ? (
+                    <span className="text-solarized-cyan">{durationDisplay}</span>
+                  ) : day.reps > 0 ? (
+                    `${day.reps} reps`
+                  ) : ''}
                 </div>
               </div>
-              <div className="w-16 text-xs text-solarized-base01 text-right">
-                {day.reps > 0 ? `${day.reps} reps` : ''}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -1023,19 +1144,28 @@ export function Stats({ workouts, exercises }: StatsProps) {
           <div className="space-y-4">
             <div className="text-center mb-4">
               <h4 className="text-lg font-semibold text-solarized-base02">{selectedExercise.name}</h4>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
-                categories.find(c => c.value === selectedExercise.category)?.color || 'bg-gray-100 text-gray-800 border-gray-200'
-              }`}>
-                {categories.find(c => c.value === selectedExercise.category)?.label}
-              </span>
+              <div className="flex items-center justify-center gap-2">
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
+                  categories.find(c => c.value === selectedExercise.category)?.color || 'bg-gray-100 text-gray-800 border-gray-200'
+                }`}>
+                  {categories.find(c => c.value === selectedExercise.category)?.label}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-solarized-base1 text-solarized-base02 border border-solarized-base0">
+                  {isTimeExercise ? (
+                    <><Clock size={12} /> Time</>
+                  ) : (
+                    <><Hash size={12} /> Reps</>
+                  )}
+                </span>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-solarized-blue/10 p-4 rounded-lg border border-solarized-blue/20">
                 <h5 className="font-semibold text-solarized-blue mb-3">{exerciseComparison.currentYear.year} (Current Year)</h5>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-solarized-base01">Total Reps:</span>
-                    <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.totalReps}</span>
+                    <span className="text-sm text-solarized-base01">{isTimeExercise ? 'Total Time:' : 'Total Reps:'}</span>
+                    <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.totalDisplay}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-solarized-base01">Workout Days:</span>
@@ -1046,8 +1176,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
                     <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.dailyAverage}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-solarized-base01">Reps per Day:</span>
-                    <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.repsPerDay}</span>
+                    <span className="text-sm text-solarized-base01">{isTimeExercise ? 'Time per Day:' : 'Reps per Day:'}</span>
+                    <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.perDay}</span>
                   </div>
                 </div>
               </div>
@@ -1055,8 +1185,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
                 <h5 className="font-semibold text-solarized-violet mb-3">{exerciseComparison.lastYear.year} (Last Year)</h5>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-solarized-base01">Total Reps:</span>
-                    <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.totalReps}</span>
+                    <span className="text-sm text-solarized-base01">{isTimeExercise ? 'Total Time:' : 'Total Reps:'}</span>
+                    <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.totalDisplay}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-solarized-base01">Workout Days:</span>
@@ -1067,8 +1197,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
                     <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.dailyAverage}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-solarized-base01">Reps per Day:</span>
-                    <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.repsPerDay}</span>
+                    <span className="text-sm text-solarized-base01">{isTimeExercise ? 'Time per Day:' : 'Reps per Day:'}</span>
+                    <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.perDay}</span>
                   </div>
                 </div>
               </div>
@@ -1077,21 +1207,15 @@ export function Stats({ workouts, exercises }: StatsProps) {
               <h5 className="font-semibold text-solarized-green mb-2">Year-over-Year Change</h5>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-solarized-base01">Total Reps: </span>
+                  <span className="text-solarized-base01">{isTimeExercise ? 'Total Time: ' : 'Total Reps: '}</span>
                   <span className={`font-medium ${
-                    exerciseComparison.currentYear.totalReps >= exerciseComparison.lastYear.totalReps ? 'text-solarized-green' : 'text-solarized-red'
+                    exerciseComparison.currentYear.totalValue >= exerciseComparison.lastYear.totalValue ? 'text-solarized-green' : 'text-solarized-red'
                   }`}>
-                    {exerciseComparison.currentYear.totalReps >= exerciseComparison.lastYear.totalReps ? '+' : ''}
-                    {exerciseComparison.currentYear.totalReps - exerciseComparison.lastYear.totalReps}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-solarized-base01">Reps per Day: </span>
-                  <span className={`font-medium ${
-                    exerciseComparison.currentYear.repsPerDay >= exerciseComparison.lastYear.repsPerDay ? 'text-solarized-green' : 'text-solarized-red'
-                  }`}>
-                    {exerciseComparison.currentYear.repsPerDay >= exerciseComparison.lastYear.repsPerDay ? '+' : ''}
-                    {formatSingleDecimal(exerciseComparison.currentYear.repsPerDay - exerciseComparison.lastYear.repsPerDay)}
+                    {exerciseComparison.currentYear.totalValue >= exerciseComparison.lastYear.totalValue ? '+' : ''}
+                    {isTimeExercise 
+                      ? secondsToDuration(exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue)
+                      : exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue
+                    }
                   </span>
                 </div>
               </div>
@@ -1141,7 +1265,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
       <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
           <LineChart size={20} className="text-solarized-violet" />
-          Max Reps Over Time
+          {isTimeExercise ? 'Max Duration Over Time' : 'Max Reps Over Time'}
         </h3>
         {maxChartData.length > 0 && maxChartExercise ? (
           <div className="space-y-4">
@@ -1153,7 +1277,10 @@ export function Stats({ workouts, exercises }: StatsProps) {
                 {categories.find(c => c.value === maxChartExercise.category)?.label}
               </span>
               <p className="text-sm text-solarized-base01 mt-2">
-                Current Max: <span className="font-bold text-solarized-violet">{maxChartData[maxChartData.length - 1]?.maxReps || 0} reps</span>
+                Current Max: <span className="font-bold text-solarized-violet">
+                  {maxChartData[maxChartData.length - 1]?.maxDisplay || (isTimeExercise ? '00:00' : '0')}
+                  {!isTimeExercise && ' reps'}
+                </span>
               </p>
             </div>
             <div className="relative h-48 bg-solarized-base1/10 rounded-lg p-4 border border-solarized-base1/20">
@@ -1165,14 +1292,14 @@ export function Stats({ workouts, exercises }: StatsProps) {
                   </linearGradient>
                 </defs>
                 {maxChartData.length > 1 && (() => {
-                  const maxReps = Math.max(...maxChartData.map(d => d.maxReps), 1);
+                  const maxValue = Math.max(...maxChartData.map(d => d.maxValue), 1);
                   const minDate = maxChartData[0].date.getTime();
                   const maxDate = maxChartData[maxChartData.length - 1].date.getTime();
                   const dateRange = maxDate - minDate || 1;
                   let pathData = '';
                   maxChartData.forEach((point, index) => {
                     const x = ((point.date.getTime() - minDate) / dateRange) * 400;
-                    const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                    const y = 160 - ((point.maxValue / maxValue) * 140) - 10;
                     if (index === 0) pathData += `M ${x} 150 L ${x} ${y}`;
                     else pathData += ` L ${x} ${y}`;
                   });
@@ -1180,7 +1307,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
                   let linePath = '';
                   maxChartData.forEach((point, index) => {
                     const x = ((point.date.getTime() - minDate) / dateRange) * 400;
-                    const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                    const y = 160 - ((point.maxValue / maxValue) * 140) - 10;
                     if (index === 0) linePath += `M ${x} ${y}`;
                     else linePath += ` L ${x} ${y}`;
                   });
@@ -1190,7 +1317,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
                       <path d={linePath} fill="none" stroke="rgb(108, 113, 196)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       {maxChartData.map((point, index) => {
                         const x = ((point.date.getTime() - minDate) / dateRange) * 400;
-                        const y = 160 - ((point.maxReps / maxReps) * 140) - 10;
+                        const y = 160 - ((point.maxValue / maxValue) * 140) - 10;
                         return <circle key={index} cx={x} cy={y} r="4" fill="rgb(108, 113, 196)" stroke="white" strokeWidth="2" />;
                       })}
                     </>
@@ -1198,8 +1325,8 @@ export function Stats({ workouts, exercises }: StatsProps) {
                 })()}
               </svg>
               <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-solarized-base01 py-2">
-                <span>{Math.max(...maxChartData.map(d => d.maxReps), 1)}</span>
-                <span>{Math.round(Math.max(...maxChartData.map(d => d.maxReps), 1) / 2)}</span>
+                <span>{maxChartData[maxChartData.length - 1]?.maxDisplay || (isTimeExercise ? '00:00' : '0')}</span>
+                <span>{isTimeExercise ? secondsToDuration(Math.round(Math.max(...maxChartData.map(d => d.maxValue), 1) / 2)) : Math.round(Math.max(...maxChartData.map(d => d.maxValue), 1) / 2)}</span>
                 <span>0</span>
               </div>
               <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-solarized-base01 px-4 pb-1">
@@ -1210,12 +1337,12 @@ export function Stats({ workouts, exercises }: StatsProps) {
             <div className="space-y-2">
               <h5 className="font-medium text-solarized-base02">Progress Milestones</h5>
               <div className="max-h-32 overflow-y-auto space-y-1">
-                {getMaxRepsOverTime(selectedExerciseId).slice(-5).reverse().map((milestone, index) => (
+                {getMaxRepsOverTime(selectedExerciseId, isTimeExercise).slice(-5).reverse().map((milestone, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-solarized-violet/10 rounded border border-solarized-violet/20">
                     <span className="text-sm text-solarized-base02">
                       {milestone.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </span>
-                    <span className="font-bold text-solarized-violet">{milestone.maxReps} reps</span>
+                    <span className="font-bold text-solarized-violet">{milestone.maxDisplay}{!isTimeExercise && ' reps'}</span>
                   </div>
                 ))}
               </div>
@@ -1224,7 +1351,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
         ) : selectedExerciseId ? (
           <p className="text-solarized-base01 text-center py-8">No data available for this exercise in the last 3 years</p>
         ) : (
-          <p className="text-solarized-base01 text-center py-8">Select an exercise to see max reps progression over time</p>
+          <p className="text-solarized-base01 text-center py-8">Select an exercise to see {isTimeExercise ? 'max duration' : 'max reps'} progression over time</p>
         )}
       </div>
 
@@ -1265,7 +1392,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
       <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
           <Clock size={20} className="text-solarized-blue" />
-          Volume per Session (Last 4 Months)
+          {isTimeExercise ? 'Total Duration per Session' : 'Volume per Session'} (Last 4 Months)
         </h3>
         {selectedExerciseId && volumePerSession.length > 0 ? (
           <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
@@ -1280,7 +1407,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
                       style={{ width: `${(data.volume / maxVolume) * 100}%` }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-medium text-solarized-base02">{data.volume} total reps</span>
+                      <span className="text-xs font-medium text-solarized-base02">{data.display} {isTimeExercise ? 'total' : 'total reps'}</span>
                     </div>
                   </div>
                 </div>
@@ -1290,7 +1417,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
         ) : selectedExerciseId ? (
           <p className="text-solarized-base01 text-center py-8">No session volume data for the last 4 months</p>
         ) : (
-          <p className="text-solarized-base01 text-center py-8">Select an exercise to see volume per session</p>
+          <p className="text-solarized-base01 text-center py-8">Select an exercise to see {isTimeExercise ? 'total duration' : 'volume'} per session</p>
         )}
       </div>
 

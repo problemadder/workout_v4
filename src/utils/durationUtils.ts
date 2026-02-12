@@ -150,3 +150,48 @@ export function formatDurationShort(duration: string): string {
   
   return `${m}:${seconds}`;
 }
+
+/**
+ * Sums an array of duration strings to total seconds
+ * @param durations - Array of duration strings in MM:SS format
+ * @returns Total seconds
+ */
+export function sumDurations(durations: string[]): number {
+  if (!durations || durations.length === 0) return 0;
+  return durations.reduce((total, duration) => {
+    return total + durationToSeconds(duration);
+  }, 0);
+}
+
+/**
+ * Calculates the average duration from an array of duration strings
+ * @param durations - Array of duration strings in MM:SS format
+ * @returns Average duration as MM:SS string
+ */
+export function averageDuration(durations: string[]): string {
+  if (!durations || durations.length === 0) return '00:00';
+  const totalSeconds = sumDurations(durations);
+  const avgSeconds = Math.round(totalSeconds / durations.length);
+  return secondsToDuration(avgSeconds);
+}
+
+/**
+ * Calculates the maximum duration from an array of duration strings
+ * @param durations - Array of duration strings in MM:SS format
+ * @returns Maximum duration as MM:SS string
+ */
+export function maxDuration(durations: string[]): string {
+  if (!durations || durations.length === 0) return '00:00';
+  const maxSeconds = Math.max(...durations.map(d => durationToSeconds(d)));
+  return secondsToDuration(maxSeconds);
+}
+
+/**
+ * Formats total seconds into a display string with appropriate units
+ * Shows as MM:SS for time exercises
+ * @param seconds - Total seconds
+ * @returns Formatted string like "05:30" or "00:45"
+ */
+export function formatDurationFromSeconds(seconds: number): string {
+  return secondsToDuration(seconds);
+}
