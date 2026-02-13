@@ -9,9 +9,9 @@ interface DurationInputProps {
   className?: string;
 }
 
-export default function DurationInput({ 
-  value, 
-  onChange, 
+export default function DurationInput({
+  value,
+  onChange,
   placeholder = '00:00',
   disabled = false,
   className = ''
@@ -38,7 +38,7 @@ export default function DurationInput({
     }
 
     const formatted = parseDurationInput(localValue);
-    
+
     if (formatted && validateDuration(formatted)) {
       setLocalValue(formatted);
       onChange(formatted);
@@ -51,12 +51,12 @@ export default function DurationInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
-      
+
       const currentSeconds = localValue ? durationToSeconds(localValue) : 0;
       const increment = e.key === 'ArrowUp' ? 1 : -1;
       const newSeconds = Math.max(0, currentSeconds + increment);
       const newDuration = secondsToDuration(newSeconds);
-      
+
       setLocalValue(newDuration);
       onChange(newDuration);
       setIsInvalid(false);
@@ -69,17 +69,17 @@ export default function DurationInput({
     setIsInvalid(false);
   };
 
-  const baseClasses = `w-full px-3 py-2 rounded-lg bg-base01 text-base1 
+  const baseClasses = `w-full px-2 py-2 rounded-lg bg-base01 text-base1 
     border-2 transition-colors font-mono text-center
     placeholder:text-base00 placeholder:font-mono
     focus:outline-none focus:ring-2 focus:ring-cyan focus:border-cyan`;
-  
-  const stateClasses = isInvalid 
-    ? 'border-red' 
+
+  const stateClasses = isInvalid
+    ? 'border-red'
     : 'border-base02 hover:border-base03';
-  
-  const disabledClasses = disabled 
-    ? 'opacity-50 cursor-not-allowed' 
+
+  const disabledClasses = disabled
+    ? 'opacity-50 cursor-not-allowed'
     : '';
 
   return (

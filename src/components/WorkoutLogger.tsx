@@ -435,9 +435,9 @@ export function WorkoutLogger({
   }
 
   return (
-    <div className="p-6 pb-32 space-y-6 bg-solarized-base3 min-h-screen">
+    <div className="p-3 sm:p-6 pb-32 space-y-6 bg-solarized-base3 min-h-screen">
       {/* Workout Header */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+      <div className="bg-solarized-base2 rounded-xl p-4 sm:p-6 shadow-lg border border-solarized-base1">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-solarized-base02">
             {formatDate(new Date())}
@@ -534,7 +534,7 @@ export function WorkoutLogger({
       {/* Grouped Sets */}
       <div className="space-y-4">
         {groupedSets().map((group, groupIndex) => (
-          <div key={`${group.exerciseId}-${groupIndex}`} className={`rounded-xl p-4 shadow-lg border ${group.exercise ? getCategoryBackgroundStyle(group.exercise.category) : 'bg-solarized-base2 border-solarized-base1'
+          <div key={`${group.exerciseId}-${groupIndex}`} className={`rounded-xl p-3 sm:p-4 shadow-lg border ${group.exercise ? getCategoryBackgroundStyle(group.exercise.category) : 'bg-solarized-base2 border-solarized-base1'
             }`}>
             {/* Exercise Header */}
             <div className="flex items-center justify-between mb-4">
@@ -554,7 +554,7 @@ export function WorkoutLogger({
             </div>
 
             {/* Sets for this exercise */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {group.sets.map(({ set, originalIndex, setNumber }) => {
                 const setPosition = getSetPositionForExercise(set.exerciseId, originalIndex);
                 const isTimeExercise = group.exercise?.exerciseType === 'time';
