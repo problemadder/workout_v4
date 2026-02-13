@@ -5,15 +5,15 @@
  */
 export function validateDuration(duration: string): boolean {
   if (!duration) return false;
-  
+
   const regex = /^(\d{1,2}):([0-5]\d)$/;
   const match = duration.match(regex);
-  
+
   if (!match) return false;
-  
+
   const minutes = parseInt(match[1], 10);
   const seconds = parseInt(match[2], 10);
-  
+
   return minutes >= 0 && minutes <= 99 && seconds >= 0 && seconds <= 59;
 }
 
@@ -24,7 +24,7 @@ export function validateDuration(duration: string): boolean {
  */
 export function durationToSeconds(duration: string): number {
   if (!validateDuration(duration)) return 0;
-  
+
   const [minutes, seconds] = duration.split(':').map(s => parseInt(s, 10));
   return minutes * 60 + seconds;
 }
@@ -36,10 +36,10 @@ export function durationToSeconds(duration: string): number {
  */
 export function secondsToDuration(seconds: number): string {
   if (seconds < 0) return '00:00';
-  
+
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  
+
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
@@ -50,15 +50,15 @@ export function secondsToDuration(seconds: number): string {
  */
 export function formatDuration(duration: string): string {
   if (!duration) return '';
-  
+
   const cleaned = duration.replace(/[^\d:]/g, '');
-  
+
   if (cleaned.includes(':')) {
     const parts = cleaned.split(':');
     if (parts.length === 2) {
       const minutes = parseInt(parts[0], 10) || 0;
       const seconds = parseInt(parts[1], 10) || 0;
-      
+
       if (minutes >= 0 && minutes <= 99 && seconds >= 0 && seconds <= 59) {
         return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       }
@@ -67,12 +67,12 @@ export function formatDuration(duration: string): string {
     const num = parseInt(cleaned, 10) || 0;
     const minutes = Math.floor(num / 100);
     const seconds = num % 100;
-    
+
     if (minutes >= 0 && minutes <= 99 && seconds >= 0 && seconds <= 59) {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
   }
-  
+
   return '';
 }
 
@@ -84,13 +84,13 @@ export function formatDuration(duration: string): string {
  */
 export function parseDurationInput(input: string): string {
   if (!input) return '';
-  
+
   const cleaned = input.replace(/[^\d:]/g, '');
-  
+
   if (cleaned.includes(':')) {
     return formatDuration(cleaned);
   }
-  
+
   if (cleaned.length <= 2) {
     const seconds = parseInt(cleaned, 10) || 0;
     if (seconds <= 59) {
@@ -109,7 +109,7 @@ export function parseDurationInput(input: string): string {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
   }
-  
+
   return formatDuration(cleaned);
 }
 
@@ -120,15 +120,15 @@ export function parseDurationInput(input: string): string {
  */
 export function formatDurationDisplay(seconds: number): string {
   if (seconds < 0) return '00:00';
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
-  
+
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
@@ -139,15 +139,15 @@ export function formatDurationDisplay(seconds: number): string {
  */
 export function formatDurationShort(duration: string): string {
   if (!validateDuration(duration)) return duration;
-  
+
   const [minutes, seconds] = duration.split(':');
   const m = parseInt(minutes, 10);
   const s = parseInt(seconds, 10);
-  
+
   if (m === 0) {
     return `${s}s`;
   }
-  
+
   return `${m}:${seconds}`;
 }
 
@@ -172,7 +172,7 @@ export function averageDuration(durations: string[]): string {
   if (!durations || durations.length === 0) return '00:00';
   const totalSeconds = sumDurations(durations);
   const avgSeconds = Math.round(totalSeconds / durations.length);
-  return secondsToDuration(avgSeconds);
+  return formatDurationDisplay(avgSeconds);
 }
 
 /**
@@ -183,15 +183,15 @@ export function averageDuration(durations: string[]): string {
 export function maxDuration(durations: string[]): string {
   if (!durations || durations.length === 0) return '00:00';
   const maxSeconds = Math.max(...durations.map(d => durationToSeconds(d)));
-  return secondsToDuration(maxSeconds);
+  return formatDurationDisplay(maxSeconds);
 }
 
 /**
  * Formats total seconds into a display string with appropriate units
- * Shows as MM:SS for time exercises
+ * Shows as HH:MM:SS if > 60 mins, otherwise MM:SS
  * @param seconds - Total seconds
- * @returns Formatted string like "05:30" or "00:45"
+ * @returns Formatted string
  */
 export function formatDurationFromSeconds(seconds: number): string {
-  return secondsToDuration(seconds);
+  return formatDurationDisplay(seconds);
 }

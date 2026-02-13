@@ -14,6 +14,8 @@ import { isToday, formatDate } from './utils/dateUtils';
 import { saveDraftWorkout, loadDraftWorkout, clearDraftWorkout } from './utils/draftWorkoutUtils';
 import { durationToSeconds } from './utils/durationUtils';
 
+import { migrateExercises } from './utils/dataUtils';
+
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [exercises, setExercises] = useLocalStorage<Exercise[]>('abs-exercises', []);
@@ -27,17 +29,28 @@ function App() {
   const [pendingTemplate, setPendingTemplate] = useState<WorkoutTemplate | null>(null);
   const draftSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize default exercises if none exist
+  // Initialize default exercises if none exist, and migrate existing data
   useEffect(() => {
     if (exercises.length === 0 && defaultExercises.length > 0) {
       const initialExercises: Exercise[] = defaultExercises.map(exercise => ({
         ...exercise,
         id: crypto.randomUUID(),
-        createdAt: new Date()
+        createdAt: new Date(),
+        exerciseType: exercise.exerciseType || 'reps'
       }));
       setExercises(initialExercises);
+    } else if (exercises.length > 0) {
+      // Run migration on existing exercises to ensure exerciseType is set
+      const migratedExercises = migrateExercises(exercises);
+      // Only update if changes were made (to avoid infinite loop if useEffect dependency is exercises)
+      // JSON.stringify comparison is a simple way to check for deep equality here
+      if (JSON.stringify(migratedExercises) !== JSON.stringify(exercises)) {
+        console.log('Migrating exercises data...');
+        setExercises(migratedExercises);
+      }
     }
-  }, [exercises.length, setExercises]);
+  }, [exercises.length, setExercises]); // Removed 'exercises' from dependency array to avoid potential loop, reliant on length check or explicit separate effect
+
 
   // Restore draft workout on app load
   useEffect(() => {
@@ -66,35 +79,35 @@ function App() {
   const calculateStats = (): WorkoutStats => {
     const totalWorkouts = workouts.length;
     const totalSets = workouts.reduce((total, workout) => total + workout.sets.length, 0);
-    const totalReps = workouts.reduce((total, workout) => 
+    const totalReps = workouts.reduce((total, workout) =>
       total + workout.sets.reduce((setTotal, set) => setTotal + set.reps, 0), 0
     );
-    const totalDuration = workouts.reduce((total, workout) => 
-      total + workout.sets.reduce((setTotal, set) => 
+    const totalDuration = workouts.reduce((total, workout) =>
+      total + workout.sets.reduce((setTotal, set) =>
         setTotal + (set.duration ? durationToSeconds(set.duration) : 0), 0
       ), 0
     );
 
     // Calculate current streak
     let currentStreak = 0;
-    const sortedWorkouts = [...workouts].sort((a, b) => 
+    const sortedWorkouts = [...workouts].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     if (sortedWorkouts.length > 0) {
       const today = new Date();
       let checkDate = new Date(today);
-      
+
       // If there's a workout today, start from today, otherwise start from yesterday
       if (!sortedWorkouts.some(w => isToday(new Date(w.date)))) {
         checkDate.setDate(checkDate.getDate() - 1);
       }
 
       for (let i = 0; i < 365; i++) { // Max check 365 days
-        const hasWorkout = sortedWorkouts.some(w => 
+        const hasWorkout = sortedWorkouts.some(w =>
           new Date(w.date).toDateString() === checkDate.toDateString()
         );
-        
+
         if (hasWorkout) {
           currentStreak++;
           checkDate.setDate(checkDate.getDate() - 1);
@@ -117,7 +130,7 @@ function App() {
         const prevDate = new Date(uniqueDates[i - 1]);
         const currDate = new Date(uniqueDates[i]);
         const daysDiff = Math.abs(currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
-        
+
         if (daysDiff === 1) {
           tempStreak++;
         } else {
@@ -142,37 +155,37 @@ function App() {
   const todaysWorkout = workouts.find(w => isToday(new Date(w.date)));
 
   // Sort workouts by date (newest first)
-  const sortedWorkouts = [...workouts].sort((a, b) => 
+  const sortedWorkouts = [...workouts].sort((a, b) =>
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   const handleAddExercise = (exerciseData: Omit<Exercise, 'id' | 'createdAt'>) => {
     console.log('App.handleAddExercise called with:', exerciseData);
-    
+
     const newExercise: Exercise = {
       ...exerciseData,
       id: crypto.randomUUID(),
       createdAt: new Date()
     };
-    
+
     console.log('Creating new exercise:', newExercise);
-    
+
     const updatedExercises = [...exercises, newExercise];
     console.log('Updated exercises array:', updatedExercises);
-    
+
     setExercises(updatedExercises);
     console.log('Exercise added successfully');
   };
 
   const handleEditExercise = (id: string, exerciseData: Omit<Exercise, 'id' | 'createdAt'>) => {
     console.log('App.handleEditExercise called with:', id, exerciseData);
-    
-    const updatedExercises = exercises.map(exercise => 
-      exercise.id === id 
+
+    const updatedExercises = exercises.map(exercise =>
+      exercise.id === id
         ? { ...exercise, ...exerciseData }
         : exercise
     );
-    
+
     setExercises(updatedExercises);
     console.log('Exercise edited successfully');
   };
@@ -204,7 +217,7 @@ function App() {
         id: crypto.randomUUID(),
         createdAt: new Date()
       };
-      
+
       console.log('Creating new template:', newTemplate);
       setTemplates(prevTemplates => [...prevTemplates, newTemplate]);
       console.log('Template added successfully');
@@ -212,8 +225,8 @@ function App() {
   };
 
   const handleEditTemplate = (id: string, templateData: Omit<WorkoutTemplate, 'id' | 'createdAt'>) => {
-    setTemplates(templates.map(template => 
-      template.id === id 
+    setTemplates(templates.map(template =>
+      template.id === id
         ? { ...template, ...templateData }
         : template
     ));
@@ -264,8 +277,8 @@ function App() {
   };
 
   const handleEditTarget = (id: string, targetData: Omit<WorkoutTarget, 'id' | 'createdAt'>) => {
-    setTargets(targets.map(target => 
-      target.id === id 
+    setTargets(targets.map(target =>
+      target.id === id
         ? { ...target, ...targetData }
         : target
     ));
@@ -356,23 +369,23 @@ function App() {
     if (newExercises.length > 0) {
       setExercises([...exercises, ...newExercises]);
     }
-    
+
     // Merge workouts, avoiding duplicates by date
     const existingDates = new Set(workouts.map(w => new Date(w.date).toDateString()));
-    const uniqueNewWorkouts = newWorkouts.filter(w => 
+    const uniqueNewWorkouts = newWorkouts.filter(w =>
       !existingDates.has(new Date(w.date).toDateString())
     );
-    
+
     setWorkouts([...workouts, ...uniqueNewWorkouts]);
   };
 
   const handleImportTargets = (newTargets: WorkoutTarget[]) => {
     // Merge targets, avoiding duplicates by name
     const existingNames = new Set(targets.map(t => t.name.toLowerCase()));
-    const uniqueNewTargets = newTargets.filter(t => 
+    const uniqueNewTargets = newTargets.filter(t =>
       !existingNames.has(t.name.toLowerCase())
     );
-    
+
     setTargets([...targets, ...uniqueNewTargets]);
   };
 
@@ -380,7 +393,7 @@ function App() {
     <div className="min-h-screen bg-solarized-base3">
       <main className="relative">
         {activeTab === 'dashboard' && (
-          <Dashboard 
+          <Dashboard
             workouts={sortedWorkouts}
             stats={stats}
             onStartWorkout={handleStartWorkout}
@@ -388,7 +401,7 @@ function App() {
             exercises={exercises}
           />
         )}
-        
+
         {activeTab === 'exercises' && (
           <ExerciseList
             exercises={exercises}
@@ -408,7 +421,7 @@ function App() {
             onUseTemplate={handleUseTemplate}
           />
         )}
-        
+
         {activeTab === 'workout' && (
           <WorkoutLogger
             exercises={exercises}
@@ -423,7 +436,7 @@ function App() {
             onTemplateClear={() => setPendingTemplate(null)}
           />
         )}
-        
+
         {activeTab === 'stats' && (
           <Stats
             workouts={sortedWorkouts}

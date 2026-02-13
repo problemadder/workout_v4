@@ -1,8 +1,7 @@
-import React from 'react';
-import { Calendar, Target, TrendingUp, Percent, Play, Clock, Hash } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Percent, Clock, Hash, Play } from 'lucide-react';
 import { Workout, WorkoutStats, Exercise } from '../types';
-import { formatDate, isToday, getDaysAgo } from '../utils/dateUtils';
-import { sumDurations, secondsToDuration } from '../utils/durationUtils';
+import { isToday, getDaysAgo, formatDate } from '../utils/dateUtils';
+import { formatDurationDisplay, sumDurations } from '../utils/durationUtils';
 
 interface DashboardProps {
   workouts: Workout[];
@@ -12,7 +11,7 @@ interface DashboardProps {
   exercises: Exercise[];
 }
 
-export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exercises }: DashboardProps) {
+export function Dashboard({ workouts, onStartWorkout, onUseWorkout, exercises }: DashboardProps) {
   const todaysWorkout = workouts.find(w => isToday(new Date(w.date)));
   const lastWorkout = workouts[0];
   const lastWorkoutDays = lastWorkout ? getDaysAgo(new Date(lastWorkout.date)) : null;
@@ -33,8 +32,8 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
       daysInWeek.push(day);
     }
 
-    const workoutDays = daysInWeek.filter(day => 
-      workouts.some(workout => 
+    const workoutDays = daysInWeek.filter(day =>
+      workouts.some(workout =>
         new Date(workout.date).toDateString() === day.toDateString()
       )
     ).length;
@@ -42,7 +41,7 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
     // Only count days up to today
     const today = new Date();
     const daysPassedThisWeek = daysInWeek.filter(day => day <= today).length;
-    
+
     return Math.round((workoutDays / daysPassedThisWeek) * 100);
   };
 
@@ -51,17 +50,17 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date();
-    
+
     const daysInMonth = [];
     const currentDate = new Date(firstDayOfMonth);
-    
+
     while (currentDate <= today) {
       daysInMonth.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const workoutDays = daysInMonth.filter(day => 
-      workouts.some(workout => 
+    const workoutDays = daysInMonth.filter(day =>
+      workouts.some(workout =>
         new Date(workout.date).toDateString() === day.toDateString()
       )
     ).length;
@@ -74,17 +73,17 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
     const now = new Date();
     const firstDayOfYear = new Date(now.getFullYear(), 0, 1);
     const today = new Date();
-    
+
     const daysInYear = [];
     const currentDate = new Date(firstDayOfYear);
-    
+
     while (currentDate <= today) {
       daysInYear.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const workoutDays = daysInYear.filter(day => 
-      workouts.some(workout => 
+    const workoutDays = daysInYear.filter(day =>
+      workouts.some(workout =>
         new Date(workout.date).toDateString() === day.toDateString()
       )
     ).length;
@@ -108,7 +107,7 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
           <p className="text-xl font-bold">{weekPercentage}%</p>
           <p className="text-xs opacity-90">training</p>
         </div>
-        
+
         <div className="bg-gradient-to-br from-solarized-green to-solarized-cyan text-solarized-base3 p-3 rounded-xl shadow-lg">
           <div className="flex items-center gap-1 mb-1">
             <Target size={16} />
@@ -134,7 +133,7 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
           <Calendar size={20} className="text-solarized-blue" />
           <h2 className="text-lg font-semibold text-solarized-base02">Today's Workout</h2>
         </div>
-        
+
         {todaysWorkout ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -169,12 +168,12 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
           <TrendingUp size={20} className="text-solarized-blue" />
           <h2 className="text-lg font-semibold text-solarized-base02">Recent Workouts</h2>
         </div>
-        
+
         {/* Filter workouts from last 60 days */}
         {(() => {
           const sixtyDaysAgo = new Date();
           sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-          const recentWorkouts = workouts.filter(workout => 
+          const recentWorkouts = workouts.filter(workout =>
             new Date(workout.date) >= sixtyDaysAgo
           );
 
@@ -187,9 +186,9 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
                     const exerciseId = set.exerciseId;
                     if (!groups[exerciseId]) {
                       const exercise = exercises.find(ex => ex.id === exerciseId);
-                      groups[exerciseId] = { 
-                        count: 0, 
-                        exerciseId, 
+                      groups[exerciseId] = {
+                        count: 0,
+                        exerciseId,
                         exercise,
                         totalReps: 0,
                         durations: [] as string[]
@@ -201,9 +200,9 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
                       groups[exerciseId].durations.push(set.duration);
                     }
                     return groups;
-                  }, {} as Record<string, { 
-                    count: number; 
-                    exerciseId: string; 
+                  }, {} as Record<string, {
+                    count: number;
+                    exerciseId: string;
                     exercise?: Exercise;
                     totalReps: number;
                     durations: string[]
@@ -233,10 +232,10 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
                       <div className="space-y-1">
                         {groupedExercises.map((group, index) => {
                           const isTimeExercise = group.exercise?.exerciseType === 'time';
-                          const totalDuration = group.durations.length > 0 
-                            ? secondsToDuration(sumDurations(group.durations))
+                          const totalDuration = group.durations.length > 0
+                            ? formatDurationDisplay(sumDurations(group.durations))
                             : '00:00';
-                          
+
                           return (
                             <div key={index} className="text-sm text-solarized-base01 flex items-center gap-1">
                               {group.exercise?.name || 'Unknown Exercise'} - {group.count} {group.count === 1 ? 'set' : 'sets'}
@@ -280,9 +279,9 @@ export function Dashboard({ workouts, stats, onStartWorkout, onUseWorkout, exerc
       {lastWorkout && lastWorkoutDays !== null && (
         <div className="bg-solarized-blue/10 p-4 rounded-xl border border-solarized-blue/20">
           <p className="text-sm text-solarized-base02">
-            Last workout was {lastWorkoutDays === 0 ? 'today' : 
-                            lastWorkoutDays === 1 ? 'yesterday' : 
-                            `${lastWorkoutDays} days ago`}
+            Last workout was {lastWorkoutDays === 0 ? 'today' :
+              lastWorkoutDays === 1 ? 'yesterday' :
+                `${lastWorkoutDays} days ago`}
           </p>
         </div>
       )}

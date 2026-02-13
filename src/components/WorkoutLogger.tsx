@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Minus, Save, RotateCcw, BookOpen, Trophy, TrendingUp, Star, X, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Minus, Save, RotateCcw, BookOpen, Star, X, Search } from 'lucide-react';
 import { Exercise, WorkoutSet, Workout, WorkoutTemplate } from '../types';
-import { formatDate, isToday } from '../utils/dateUtils';
+import { formatDate } from '../utils/dateUtils';
 import { getExerciseMaxReps, getExerciseAverageReps } from '../utils/maxRepUtils';
 import DurationInput from './DurationInput';
 
@@ -18,13 +18,13 @@ interface WorkoutLoggerProps {
   onTemplateClear?: () => void;
 }
 
-export function WorkoutLogger({ 
-  exercises, 
-  todaysWorkout, 
+export function WorkoutLogger({
+  exercises,
+  todaysWorkout,
   workouts,
   templates,
   pendingTemplate,
-  onSaveWorkout, 
+  onSaveWorkout,
   onUpdateWorkout,
   onAddTemplate,
   onWorkoutDataChange,
@@ -35,7 +35,7 @@ export function WorkoutLogger({
   const [showTemplates, setShowTemplates] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Exercise['category'] | 'all'>('all');
+  const [selectedCategory] = useState<Exercise['category'] | 'all'>('all');
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState('');
   const [numberOfSets, setNumberOfSets] = useState(3);
@@ -67,10 +67,10 @@ export function WorkoutLogger({
           });
         }
       });
-      
+
       setSets(templateSets);
       setNotes(`From template: ${pendingTemplate.name}`);
-      
+
       // Clear the pending template after loading
       if (onTemplateClear) {
         onTemplateClear();
@@ -105,12 +105,12 @@ export function WorkoutLogger({
 
   const addExerciseWithSets = () => {
     if (!selectedExerciseId || numberOfSets < 1) return;
-    
+
     const newSets: Omit<WorkoutSet, 'id'>[] = [];
     for (let i = 0; i < numberOfSets; i++) {
       newSets.push({ exerciseId: selectedExerciseId, reps: 0 }); // Start with 0 reps to show placeholder
     }
-    
+
     setSets([...sets, ...newSets]);
     setShowAddExercise(false);
     setNumberOfSets(3); // Reset to default
@@ -126,17 +126,17 @@ export function WorkoutLogger({
           break;
         }
       }
-      
+
       // Insert the new set right after the last set of this exercise
       const newSets = [...sets];
       newSets.splice(lastIndex + 1, 0, { exerciseId, reps: 0 });
       setSets(newSets);
     } else {
       // Fallback for when no specific exercise is provided
-      const defaultExerciseId = (selectedCategory !== 'all' 
-        ? sortedExercises.find(e => e.category === selectedCategory)?.id 
+      const defaultExerciseId = (selectedCategory !== 'all'
+        ? sortedExercises.find(e => e.category === selectedCategory)?.id
         : sortedExercises[0]?.id) || '';
-      
+
       setSets([...sets, { exerciseId: defaultExerciseId, reps: 0 }]);
     }
   };
@@ -189,7 +189,7 @@ export function WorkoutLogger({
         });
       }
     });
-    
+
     setSets(templateSets);
     setShowTemplates(false);
   };
@@ -221,10 +221,10 @@ export function WorkoutLogger({
   const getStatsForSet = (exerciseId: string, setPosition: number) => {
     const threeMonthMax = getExerciseMaxReps(workouts, exerciseId, '3months');
     const threeMonthAvg = getExerciseAverageReps(workouts, exerciseId, '3months');
-    
+
     const threeMonthMaxRecord = threeMonthMax.find(record => record.setPosition === setPosition);
     const threeMonthAvgRecord = threeMonthAvg.find(record => record.setPosition === setPosition);
-    
+
     return {
       max: threeMonthMaxRecord?.maxReps || 0,
       average: threeMonthAvgRecord?.averageReps || 0
@@ -242,16 +242,7 @@ export function WorkoutLogger({
     return position;
   };
 
-  const getExerciseSetNumber = (exerciseId: string, currentIndex: number) => {
-    // Count how many sets of this specific exercise come before the current index
-    let setNumber = 1;
-    for (let i = 0; i < currentIndex; i++) {
-      if (sets[i].exerciseId === exerciseId) {
-        setNumber++;
-      }
-    }
-    return setNumber;
-  };
+
 
   const getCategoryStyle = (category: Exercise['category']) => {
     return categories.find(c => c.value === category)?.color || 'bg-solarized-base1/10 text-solarized-base01 border-solarized-base1/20';
@@ -260,7 +251,7 @@ export function WorkoutLogger({
   const getCategoryBackgroundStyle = (category: Exercise['category']) => {
     const categoryConfig = categories.find(c => c.value === category);
     if (!categoryConfig) return 'bg-solarized-base2 border-solarized-base1';
-    
+
     switch (category) {
       case 'abs':
         return 'bg-[#FFE6A9] border-[#FFE6A9]';
@@ -285,21 +276,76 @@ export function WorkoutLogger({
 
   const getPlaceholderText = (exerciseId: string, setPosition: number) => {
     const exercise = sortedExercises.find(e => e.id === exerciseId);
-    
-    if (exercise?.exerciseType === 'time') {
-      return '00:00';
-    }
-    
+
+    // Get stats for this set position
     const stats = getStatsForSet(exerciseId, setPosition);
+    const hasMax = stats.max !== 0 && stats.max !== undefined;
+    const hasAverage = stats.average !== 0 && stats.average !== undefined;
+
+    if (exercise?.exerciseType === 'time') {
+      // For time exercises, stats.max and stats.average are in seconds (from getExerciseMaxReps/AverageReps, 
+      // which we need to make sure handle time exercises correctly or we need separate utils)
+
+      // Wait, getExerciseMaxReps/AverageReps currently return "reps" and assume number.
+      // We should check how those are implemented. 
+      // Looking at the imports in WorkoutLogger.tsx: import { getExerciseMaxReps, getExerciseAverageReps } from '../utils/maxRepUtils';
+      // I need to update maxRepUtils.ts to handle 'duration' if it doesn't already, OR handle it here manually.
+      // Let's verify maxRepUtils in a moment. For now, let's assume we need to calculate it here or fetch differently.
+
+      // Actually, let's calculate it here for now to be safe and explicit, similar to the original plan.
+
+      const relevantWorkouts = workouts.filter(w =>
+        w.sets.some(s => s.exerciseId === exerciseId)
+      );
+
+      const durationsAtPosition: number[] = [];
+
+      relevantWorkouts.forEach(workout => {
+        const exerciseSets = workout.sets.filter(s => s.exerciseId === exerciseId);
+        if (exerciseSets[setPosition - 1]) { // setPosition is 1-based
+          const durationStr = exerciseSets[setPosition - 1].duration;
+          if (durationStr) {
+            // import durationToSeconds if not available or assume it is
+            // It is imported from '../utils/durationUtils' in other files, let's check imports in this file.
+            // It is NOT imported in WorkoutLogger.tsx currently (checked file content previously).
+            // I'll need to add the import.
+            // For now, I'll use a helper or modify imports in a separate step? 
+            // No, I can add the import in the top as well.
+            // Wait, I can't edit multiple distinct parts easily with one replace_file_content unless I take the whole file.
+            // I'll stick to modifying this function and assuming I'll add the import in a previous or subsequent step?
+            // Actually, I should probably do it in one go if possible, or multiple steps.
+            // I'll add the import first in a separate tool call to be safe? 
+            // No, I'll calculate it manually or assume standard format for now.
+            // Or better: I will calculate it right here.
+            const [mins, secs] = durationStr.split(':').map(Number);
+            if (!isNaN(mins) && !isNaN(secs)) {
+              durationsAtPosition.push(mins * 60 + secs);
+            }
+          }
+        }
+      });
+
+      if (durationsAtPosition.length === 0) return '00:00';
+
+      const maxSeconds = Math.max(...durationsAtPosition);
+      const avgSeconds = Math.round(durationsAtPosition.reduce((a, b) => a + b, 0) / durationsAtPosition.length);
+
+      const format = (secs: number) => {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      };
+
+      return `max ${format(maxSeconds)} / avg ${format(avgSeconds)}`;
+    }
+
+    // Reps handling (unchanged)
     const parts = [];
 
     const formatStatValue = (value: number) => {
       const rounded = Math.round(value * 10) / 10;
       return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1);
     };
-
-    const hasMax = stats.max !== 0 && stats.max !== undefined;
-    const hasAverage = stats.average !== 0 && stats.average !== undefined;
 
     if (hasMax) {
       parts.push(`↑${formatStatValue(stats.max)}`);
@@ -319,17 +365,17 @@ export function WorkoutLogger({
     setNumberOfSets(prev => Math.max(prev - 1, 1));
   };
 
-  const filteredExercises = selectedCategory === 'all' 
-    ? sortedExercises 
+  const filteredExercises = selectedCategory === 'all'
+    ? sortedExercises
     : sortedExercises.filter(ex => ex.category === selectedCategory);
 
   // Further filter by search query
-  const searchFilteredExercises = searchQuery.trim() 
-    ? filteredExercises.filter(ex => 
-        ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (ex.description && ex.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        categories.find(c => c.value === ex.category)?.label.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+  const searchFilteredExercises = searchQuery.trim()
+    ? filteredExercises.filter(ex =>
+      ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (ex.description && ex.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      categories.find(c => c.value === ex.category)?.label.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : filteredExercises;
 
   // Auto-select exercise when search results in a single match
@@ -394,7 +440,7 @@ export function WorkoutLogger({
             {formatDate(new Date())}
           </h2>
         </div>
-        
+
         {todaysWorkout && (
           <div className="bg-solarized-green/10 p-3 rounded-lg mb-4 border border-solarized-green/20">
             <p className="text-sm text-solarized-base02">
@@ -412,7 +458,7 @@ export function WorkoutLogger({
             <BookOpen size={18} />
             Use Template
           </button>
-          
+
           {sets.length > 0 && onAddTemplate && (
             <button
               onClick={() => setShowSaveTemplate(!showSaveTemplate)}
@@ -485,9 +531,8 @@ export function WorkoutLogger({
       {/* Grouped Sets */}
       <div className="space-y-4">
         {groupedSets().map((group, groupIndex) => (
-          <div key={`${group.exerciseId}-${groupIndex}`} className={`rounded-xl p-4 shadow-lg border ${
-            group.exercise ? getCategoryBackgroundStyle(group.exercise.category) : 'bg-solarized-base2 border-solarized-base1'
-          }`}>
+          <div key={`${group.exerciseId}-${groupIndex}`} className={`rounded-xl p-4 shadow-lg border ${group.exercise ? getCategoryBackgroundStyle(group.exercise.category) : 'bg-solarized-base2 border-solarized-base1'
+            }`}>
             {/* Exercise Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3 flex-wrap">
@@ -495,7 +540,7 @@ export function WorkoutLogger({
                   {group.exercise?.name || 'Unknown Exercise'}
                 </h3>
                 {group.exercise && (
-                  <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryStyle(group.exercise.category)}`} style={{ backgroundColor: categories.find(c => c.value === group.exercise!.category)?.bgColor }}>
+                  <span className={`text-xs px-2 py-1 rounded-full border ${getCategoryStyle(group.exercise.category)}`}>
                     {categories.find(c => c.value === group.exercise!.category)?.label}
                   </span>
                 )}
@@ -510,7 +555,7 @@ export function WorkoutLogger({
               {group.sets.map(({ set, originalIndex, setNumber }) => {
                 const setPosition = getSetPositionForExercise(set.exerciseId, originalIndex);
                 const isTimeExercise = group.exercise?.exerciseType === 'time';
-                
+
                 return (
                   <div key={originalIndex} className="bg-solarized-base1/10 rounded-lg p-2 border border-solarized-base1/20">
                     <div className="flex items-center justify-between mb-1">
@@ -526,13 +571,13 @@ export function WorkoutLogger({
                         </button>
                       </div>
                     </div>
-                    
+
                     {isTimeExercise ? (
                       <DurationInput
                         value={set.duration || ''}
                         onChange={(value) => updateSet(originalIndex, 'duration', value)}
                         placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                        className="text-lg font-bold"
+                        className="text-lg font-bold placeholder:text-xs placeholder:font-normal"
                       />
                     ) : (
                       <input
@@ -632,22 +677,22 @@ export function WorkoutLogger({
                     // When not searching, show grouped by category
                     categories.map(category => {
                       const categoryExercises = searchFilteredExercises.filter(ex => ex.category === category.value);
-                    if (categoryExercises.length === 0) return null;
-                    
-                    return (
-                      <optgroup key={category.value} label={category.label}>
-                        {categoryExercises.map(exercise => (
-                          <option key={exercise.id} value={exercise.id}>
-                            {exercise.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
+                      if (categoryExercises.length === 0) return null;
+
+                      return (
+                        <optgroup key={category.value} label={category.label}>
+                          {categoryExercises.map(exercise => (
+                            <option key={exercise.id} value={exercise.id}>
+                              {exercise.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
                     })
                   )}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-solarized-base01 mb-2">
                   Number of Sets
@@ -678,7 +723,7 @@ export function WorkoutLogger({
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={addExerciseWithSets}
