@@ -42,11 +42,11 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
     try {
       const content = await file.text();
       console.log('File content:', content.substring(0, 500) + '...');
-      
+
       if (type === 'exercises') {
         const parsedExercises = parseExercisesCSV(content);
         console.log('Parsed exercises:', parsedExercises);
-        
+
         if (parsedExercises.length === 0) {
           throw new Error('No valid exercises found in CSV');
         }
@@ -57,6 +57,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
           name: ex.name,
           description: ex.description,
           category: ex.category,
+          exerciseType: ex.exerciseType,
           createdAt: new Date()
         }));
 
@@ -68,7 +69,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
         });
       } else if (type === 'workouts') {
         const { workouts: parsedWorkouts, newExercises } = parseWorkoutsCSV(content, exercises);
-        
+
         if (parsedWorkouts.length === 0) {
           throw new Error('No valid workouts found in CSV');
         }
@@ -80,7 +81,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
         });
       } else if (type === 'targets') {
         const parsedTargets = parseTargetsCSV(content, exercises);
-        
+
         if (parsedTargets.length === 0) {
           throw new Error('No valid targets found in CSV');
         }
@@ -119,12 +120,12 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
   };
 
   const downloadTemplate = (type: 'exercises' | 'workouts' | 'targets') => {
-    const content = type === 'exercises' ? generateExerciseCSVTemplate() : 
-                   type === 'workouts' ? generateWorkoutCSVTemplate() :
-                   generateTargetCSVTemplate();
+    const content = type === 'exercises' ? generateExerciseCSVTemplate() :
+      type === 'workouts' ? generateWorkoutCSVTemplate() :
+        generateTargetCSVTemplate();
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    
+
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
@@ -207,7 +208,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
     localStorage.removeItem('abs-workouts');
     localStorage.removeItem('abs-templates');
     localStorage.removeItem('abs-targets');
-    
+
     // Reload the page to reset the app
     window.location.reload();
   };
@@ -216,13 +217,12 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
     <div className="p-6 pb-24 space-y-6 bg-solarized-base3 min-h-screen">
       {/* Status Message */}
       {importStatus && (
-        <div className={`p-4 rounded-lg border flex items-center gap-3 ${
-          importStatus.type === 'success' 
+        <div className={`p-4 rounded-lg border flex items-center gap-3 ${importStatus.type === 'success'
             ? 'bg-solarized-green/10 border-solarized-green/20 text-solarized-green'
             : importStatus.type === 'error'
-            ? 'bg-solarized-red/10 border-solarized-red/20 text-solarized-red'
-            : 'bg-solarized-blue/10 border-solarized-blue/20 text-solarized-blue'
-        }`}>
+              ? 'bg-solarized-red/10 border-solarized-red/20 text-solarized-red'
+              : 'bg-solarized-blue/10 border-solarized-blue/20 text-solarized-blue'
+          }`}>
           {importStatus.type === 'success' && <CheckCircle size={20} />}
           {importStatus.type === 'error' && <AlertCircle size={20} />}
           {importStatus.type === 'info' && <AlertCircle size={20} />}
@@ -242,7 +242,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
           <Upload size={20} className="text-solarized-blue" />
           Import Data
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Import Exercises */}
           <div className="space-y-3">
@@ -250,7 +250,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
             <p className="text-sm text-solarized-base01">
               Upload a CSV file with your exercises. Required columns: name, category. Optional: description.
             </p>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={() => downloadTemplate('exercises')}
@@ -259,7 +259,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
                 <Download size={16} />
                 Template
               </button>
-              
+
               <label className="flex items-center gap-2 px-4 py-2 bg-solarized-blue text-solarized-base3 rounded-lg hover:bg-solarized-blue/90 transition-colors cursor-pointer text-sm">
                 <Upload size={16} />
                 {isProcessing && importType === 'exercises' ? 'Processing...' : 'Import CSV'}
@@ -280,7 +280,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
             <p className="text-sm text-solarized-base01">
               Upload a CSV file with your workout history. Required columns: date, exerciseName, setNumber, reps.
             </p>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={() => downloadTemplate('workouts')}
@@ -289,7 +289,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
                 <Download size={16} />
                 Template
               </button>
-              
+
               <label className="flex items-center gap-2 px-4 py-2 bg-solarized-green text-solarized-base3 rounded-lg hover:bg-solarized-green/90 transition-colors cursor-pointer text-sm">
                 <Upload size={16} />
                 {isProcessing && importType === 'workouts' ? 'Processing...' : 'Import CSV'}
@@ -310,7 +310,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
             <p className="text-sm text-solarized-base01">
               Upload a CSV file with your workout targets. Required columns: name, type, targetValue, period.
             </p>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={() => downloadTemplate('targets')}
@@ -319,7 +319,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
                 <Download size={16} />
                 Template
               </button>
-              
+
               <label className="flex items-center gap-2 px-4 py-2 bg-solarized-orange text-solarized-base3 rounded-lg hover:bg-solarized-orange/90 transition-colors cursor-pointer text-sm">
                 <Upload size={16} />
                 {isProcessing && importType === 'targets' ? 'Processing...' : 'Import CSV'}
@@ -357,7 +357,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
           <Download size={20} className="text-solarized-green" />
           Export Data
         </h3>
-        
+
         <div className="grid grid-cols-1 gap-3">
           <button
             onClick={handleExportDetailed}
@@ -367,7 +367,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
             <FileText size={18} />
             Export Detailed Workouts (CSV)
           </button>
-          
+
           <button
             onClick={handleExportSummary}
             disabled={workouts.length === 0}
@@ -395,7 +395,7 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
             Export Targets (CSV)
           </button>
         </div>
-        
+
         <p className="text-sm text-solarized-base01 mt-3">
           Detailed export includes every set for accurate max/average calculations. Summary export shows daily totals. Exercise export includes all your created exercises. Target export includes all your workout targets.
         </p>
@@ -407,11 +407,11 @@ export function ImportExport({ exercises, workouts, targets, onImportExercises, 
           <RotateCcw size={20} />
           Reset Application
         </h3>
-        
+
         <p className="text-sm text-solarized-base01 mb-4">
           This will permanently delete all your exercises, workouts, and templates. This action cannot be undone.
         </p>
-        
+
         {!showResetConfirm ? (
           <button
             onClick={handleResetApp}
