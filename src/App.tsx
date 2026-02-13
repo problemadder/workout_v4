@@ -200,7 +200,7 @@ function App() {
     // Also remove from templates
     setTemplates(templates.map(template => ({
       ...template,
-      exercises: template.exercises.filter(ex => ex.id !== id)
+      exercises: template.exercises.filter(ex => ex.exerciseId !== id)
     })).filter(template => template.exercises.length > 0));
   };
 
@@ -305,6 +305,11 @@ function App() {
         : workout
     ));
     setActiveTab('dashboard');
+    clearDraftWorkout();
+  };
+
+  const handleDeleteWorkout = (id: string) => {
+    setWorkouts(workouts.filter(w => w.id !== id));
     clearDraftWorkout();
   };
 
@@ -431,6 +436,7 @@ function App() {
             pendingTemplate={pendingTemplate}
             onSaveWorkout={handleSaveWorkout}
             onUpdateWorkout={handleUpdateWorkout}
+            onDeleteWorkout={handleDeleteWorkout}
             onAddTemplate={handleAddTemplate}
             onWorkoutDataChange={handleWorkoutDataChange}
             onTemplateClear={() => setPendingTemplate(null)}

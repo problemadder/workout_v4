@@ -13,6 +13,7 @@ interface WorkoutLoggerProps {
   pendingTemplate?: WorkoutTemplate | null;
   onSaveWorkout: (workout: Omit<Workout, 'id'>) => void;
   onUpdateWorkout: (id: string, workout: Omit<Workout, 'id'>) => void;
+  onDeleteWorkout?: (id: string) => void;
   onAddTemplate?: (template: Omit<WorkoutTemplate, 'id' | 'createdAt'>) => void;
   onWorkoutDataChange?: (sets: Array<{ exerciseId: string; reps: number; duration?: string }>, notes: string) => void;
   onTemplateClear?: () => void;
@@ -26,6 +27,7 @@ export function WorkoutLogger({
   pendingTemplate,
   onSaveWorkout,
   onUpdateWorkout,
+  onDeleteWorkout,
   onAddTemplate,
   onWorkoutDataChange,
   onTemplateClear
@@ -177,6 +179,9 @@ export function WorkoutLogger({
   };
 
   const resetWorkout = () => {
+    if (todaysWorkout && onDeleteWorkout) {
+      onDeleteWorkout(todaysWorkout.id);
+    }
     setSets([]);
     setNotes('');
   };
