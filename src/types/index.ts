@@ -13,6 +13,7 @@ export interface WorkoutSet {
   reps: number;
   duration?: string;
   notes?: string;
+  completedAt?: Date;
 }
 
 export interface Workout {

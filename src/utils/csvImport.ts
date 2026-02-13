@@ -423,15 +423,15 @@ export function generateExerciseCSVTemplate(): string {
 }
 
 export function generateWorkoutCSVTemplate(): string {
-  const headers = ['date', 'exerciseName', 'exerciseCategory', 'exerciseType', 'setNumber', 'reps', 'duration', 'setNotes', 'workoutNotes'];
+  const headers = ['date', 'timestamp', 'exerciseName', 'exerciseCategory', 'exerciseType', 'setNumber', 'reps', 'duration', 'setNotes', 'workoutNotes'];
   const examples = [
-    ['2024-01-15', 'Push-ups', 'arms', 'reps', '1', '15', '', 'Felt strong', 'Great morning workout'],
-    ['2024-01-15', 'Push-ups', 'arms', 'reps', '2', '12', '', 'Getting tired', 'Great morning workout'],
-    ['2024-01-15', 'Push-ups', 'arms', 'reps', '3', '10', '', 'Final set', 'Great morning workout'],
-    ['2024-01-15', 'Squats', 'legs', 'reps', '1', '20', '', 'Good form', 'Great morning workout'],
-    ['2024-01-15', 'Squats', 'legs', 'reps', '2', '18', '', 'Legs burning', 'Great morning workout'],
-    ['2024-01-16', 'Plank', 'abs', 'time', '1', '0', '00:30', 'Held for 30 seconds', 'Quick abs session'],
-    ['2024-01-16', 'Plank', 'abs', 'time', '2', '0', '00:25', 'Shorter hold', 'Quick abs session']
+    ['2024-01-15', '2024-01-15 08:30:00', 'Push-ups', 'arms', 'reps', '1', '15', '', 'Felt strong', 'Great morning workout'],
+    ['2024-01-15', '2024-01-15 08:32:00', 'Push-ups', 'arms', 'reps', '2', '12', '', 'Getting tired', 'Great morning workout'],
+    ['2024-01-15', '2024-01-15 08:35:00', 'Push-ups', 'arms', 'reps', '3', '10', '', 'Final set', 'Great morning workout'],
+    ['2024-01-15', '2024-01-15 08:40:00', 'Squats', 'legs', 'reps', '1', '20', '', 'Good form', 'Great morning workout'],
+    ['2024-01-15', '2024-01-15 08:43:00', 'Squats', 'legs', 'reps', '2', '18', '', 'Legs burning', 'Great morning workout'],
+    ['2024-01-16', '2024-01-16 18:00:00', 'Plank', 'abs', 'time', '1', '0', '00:30', 'Held for 30 seconds', 'Quick abs session'],
+    ['2024-01-16', '2024-01-16 18:03:00', 'Plank', 'abs', 'time', '2', '0', '00:25', 'Shorter hold', 'Quick abs session']
   ];
 
   const csvContent = [

@@ -4,10 +4,11 @@ import { WorkoutTarget } from '../types';
 export function exportWorkoutsToCSV(workouts: Workout[], exercises: Exercise[]): void {
   // Create a map for quick exercise lookup
   const exerciseMap = new Map(exercises.map(ex => [ex.id, ex]));
-  
+
   // Prepare CSV headers - removed "Set Notes"
   const headers = [
     'Date',
+    'Timestamp',
     'Exercise Name',
     'Exercise Category',
     'Exercise Type',
@@ -16,25 +17,26 @@ export function exportWorkoutsToCSV(workouts: Workout[], exercises: Exercise[]):
     'Duration',
     'Workout Notes'
   ];
-  
+
   // Prepare CSV rows
   const rows: string[][] = [];
-  
+
   // Sort workouts by date (oldest first for chronological export)
-  const sortedWorkouts = [...workouts].sort((a, b) => 
+  const sortedWorkouts = [...workouts].sort((a, b) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
-  
+
   sortedWorkouts.forEach(workout => {
     // Fix date formatting to avoid timezone issues
     const workoutDate = new Date(workout.date);
     const formattedDate = `${workoutDate.getFullYear()}-${String(workoutDate.getMonth() + 1).padStart(2, '0')}-${String(workoutDate.getDate()).padStart(2, '0')}`;
     const workoutNotes = workout.notes || '';
-    
+
     if (workout.sets.length === 0) {
       // If no sets, still add a row for the workout
       rows.push([
         formattedDate,
+        '', // Timestamp
         'No exercises',
         '',
         '',
@@ -46,19 +48,27 @@ export function exportWorkoutsToCSV(workouts: Workout[], exercises: Exercise[]):
     } else {
       // Group sets by exercise to properly number them
       const exerciseSetCounts = new Map<string, number>();
-      
+
       workout.sets.forEach((set) => {
         const exercise = exerciseMap.get(set.exerciseId);
         const exerciseName = exercise?.name || 'Unknown Exercise';
         const exerciseCategory = exercise?.category || '';
         const exerciseType = exercise?.exerciseType || 'reps';
-        
+
+        // Format timestamp
+        let formattedTimestamp = '';
+        if (set.completedAt) {
+          const date = new Date(set.completedAt);
+          formattedTimestamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+        }
+
         // Track set number for this exercise
         const currentSetNumber = (exerciseSetCounts.get(set.exerciseId) || 0) + 1;
         exerciseSetCounts.set(set.exerciseId, currentSetNumber);
-        
+
         rows.push([
           formattedDate,
+          formattedTimestamp,
           exerciseName,
           exerciseCategory,
           exerciseType,
@@ -70,18 +80,18 @@ export function exportWorkoutsToCSV(workouts: Workout[], exercises: Exercise[]):
       });
     }
   });
-  
+
   // Convert to CSV format with proper UTF-8 encoding
   // Escape quotes and wrap fields in quotes to handle special characters
   const csvContent = [
     headers.map(header => `"${header.replace(/"/g, '""')}"`).join(','),
     ...rows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
   ].join('\n');
-  
+
   // Create and download the file with UTF-8 encoding (no BOM to avoid display issues)
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -97,7 +107,7 @@ export function exportWorkoutsToCSV(workouts: Workout[], exercises: Exercise[]):
 export function exportSummaryToCSV(workouts: Workout[], exercises: Exercise[]): void {
   // Create a map for quick exercise lookup
   const exerciseMap = new Map(exercises.map(ex => [ex.id, ex]));
-  
+
   // Calculate summary statistics per workout
   const headers = [
     'Date',
@@ -107,31 +117,31 @@ export function exportSummaryToCSV(workouts: Workout[], exercises: Exercise[]): 
     'Exercises Used',
     'Workout Notes'
   ];
-  
+
   const rows: string[][] = [];
-  
+
   // Sort workouts by date (oldest first)
-  const sortedWorkouts = [...workouts].sort((a, b) => 
+  const sortedWorkouts = [...workouts].sort((a, b) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
-  
+
   sortedWorkouts.forEach(workout => {
     // Fix date formatting to avoid timezone issues
     const workoutDate = new Date(workout.date);
     const formattedDate = `${workoutDate.getFullYear()}-${String(workoutDate.getMonth() + 1).padStart(2, '0')}-${String(workoutDate.getDate()).padStart(2, '0')}`;
     const totalSets = workout.sets.length;
     const totalReps = workout.sets.reduce((sum, set) => sum + set.reps, 0);
-    
+
     // Get unique exercises and muscle groups used in this workout
     const uniqueExercises = [...new Set(workout.sets.map(set => set.exerciseId))]
       .map(id => exerciseMap.get(id)?.name || 'Unknown')
       .join('; ');
-    
+
     const uniqueMuscleGroups = [...new Set(workout.sets.map(set => {
       const exercise = exerciseMap.get(set.exerciseId);
       return exercise?.category || 'unknown';
     }))].join('; ');
-    
+
     rows.push([
       formattedDate,
       totalSets.toString(),
@@ -141,17 +151,17 @@ export function exportSummaryToCSV(workouts: Workout[], exercises: Exercise[]): 
       workout.notes || ''
     ]);
   });
-  
+
   // Convert to CSV format with proper UTF-8 encoding
   const csvContent = [
     headers.map(header => `"${header.replace(/"/g, '""')}"`).join(','),
     ...rows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
   ].join('\n');
-  
+
   // Create and download the file with UTF-8 encoding
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -173,18 +183,18 @@ export function exportExercisesToCSV(exercises: Exercise[]): void {
     'Description',
     'Created Date'
   ];
-  
+
   // Prepare CSV rows
   const rows: string[][] = [];
-  
+
   // Sort exercises alphabetically by name
   const sortedExercises = [...exercises].sort((a, b) => a.name.localeCompare(b.name));
-  
+
   sortedExercises.forEach(exercise => {
     // Fix date formatting to avoid timezone issues
     const createdDate = new Date(exercise.createdAt);
     const formattedDate = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
-    
+
     rows.push([
       exercise.name,
       exercise.category,
@@ -193,17 +203,17 @@ export function exportExercisesToCSV(exercises: Exercise[]): void {
       formattedDate
     ]);
   });
-  
+
   // Convert to CSV format with proper UTF-8 encoding
   const csvContent = [
     headers.map(header => `"${header.replace(/"/g, '""')}"`).join(','),
     ...rows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
   ].join('\n');
-  
+
   // Create and download the file with UTF-8 encoding
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -219,7 +229,7 @@ export function exportExercisesToCSV(exercises: Exercise[]): void {
 export function exportTargetsToCSV(targets: WorkoutTarget[], exercises: Exercise[]): void {
   // Create a map for quick exercise lookup
   const exerciseMap = new Map(exercises.map(ex => [ex.id, ex]));
-  
+
   // Prepare CSV headers
   const headers = [
     'Name',
@@ -231,20 +241,20 @@ export function exportTargetsToCSV(targets: WorkoutTarget[], exercises: Exercise
     'Is Active',
     'Created Date'
   ];
-  
+
   // Prepare CSV rows
   const rows: string[][] = [];
-  
+
   // Sort targets alphabetically by name
   const sortedTargets = [...targets].sort((a, b) => a.name.localeCompare(b.name));
-  
+
   sortedTargets.forEach(target => {
     // Fix date formatting to avoid timezone issues
     const createdDate = new Date(target.createdAt);
     const formattedDate = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}-${String(createdDate.getDate()).padStart(2, '0')}`;
-    
+
     const exercise = target.exerciseId ? exerciseMap.get(target.exerciseId) : null;
-    
+
     rows.push([
       target.name,
       target.type,
@@ -256,17 +266,17 @@ export function exportTargetsToCSV(targets: WorkoutTarget[], exercises: Exercise
       formattedDate
     ]);
   });
-  
+
   // Convert to CSV format with proper UTF-8 encoding
   const csvContent = [
     headers.map(header => `"${header.replace(/"/g, '""')}"`).join(','),
     ...rows.map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
   ].join('\n');
-  
+
   // Create and download the file with UTF-8 encoding
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  
+
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);

@@ -63,7 +63,8 @@ export function WorkoutLogger({
         for (let i = 0; i < templateExercise.sets; i++) {
           templateSets.push({
             exerciseId: templateExercise.exerciseId,
-            reps: 0 // Start with 0 reps to show placeholder
+            reps: 0, // Start with 0 reps to show placeholder
+            completedAt: new Date()
           });
         }
       });
@@ -84,7 +85,8 @@ export function WorkoutLogger({
       setSets(todaysWorkout.sets.map(set => ({
         exerciseId: set.exerciseId,
         reps: set.reps,
-        duration: set.duration
+        duration: set.duration,
+        completedAt: set.completedAt
       })));
       setNotes(todaysWorkout.notes || '');
     }
@@ -108,7 +110,7 @@ export function WorkoutLogger({
 
     const newSets: Omit<WorkoutSet, 'id'>[] = [];
     for (let i = 0; i < numberOfSets; i++) {
-      newSets.push({ exerciseId: selectedExerciseId, reps: 0 }); // Start with 0 reps to show placeholder
+      newSets.push({ exerciseId: selectedExerciseId, reps: 0, completedAt: new Date() }); // Start with 0 reps to show placeholder
     }
 
     setSets([...sets, ...newSets]);
@@ -129,7 +131,7 @@ export function WorkoutLogger({
 
       // Insert the new set right after the last set of this exercise
       const newSets = [...sets];
-      newSets.splice(lastIndex + 1, 0, { exerciseId, reps: 0 });
+      newSets.splice(lastIndex + 1, 0, { exerciseId, reps: 0, completedAt: new Date() });
       setSets(newSets);
     } else {
       // Fallback for when no specific exercise is provided
@@ -137,7 +139,7 @@ export function WorkoutLogger({
         ? sortedExercises.find(e => e.category === selectedCategory)?.id
         : sortedExercises[0]?.id) || '';
 
-      setSets([...sets, { exerciseId: defaultExerciseId, reps: 0 }]);
+      setSets([...sets, { exerciseId: defaultExerciseId, reps: 0, completedAt: new Date() }]);
     }
   };
 
@@ -185,7 +187,8 @@ export function WorkoutLogger({
       for (let i = 0; i < templateExercise.sets; i++) {
         templateSets.push({
           exerciseId: templateExercise.exerciseId,
-          reps: 0 // Start with 0 reps to show placeholder
+          reps: 0, // Start with 0 reps to show placeholder
+          completedAt: new Date()
         });
       }
     });
@@ -336,7 +339,7 @@ export function WorkoutLogger({
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
       };
 
-      return `max ${format(maxSeconds)} / avg ${format(avgSeconds)}`;
+      return `↑${format(maxSeconds)} ⌀${format(avgSeconds)}`;
     }
 
     // Reps handling (unchanged)
@@ -577,7 +580,7 @@ export function WorkoutLogger({
                         value={set.duration || ''}
                         onChange={(value) => updateSet(originalIndex, 'duration', value)}
                         placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                        className="text-lg font-bold placeholder:text-xs placeholder:font-normal"
+                        className="text-lg font-bold placeholder:text-[10px] placeholder:font-normal"
                       />
                     ) : (
                       <input
