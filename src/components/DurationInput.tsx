@@ -70,8 +70,8 @@ export default function DurationInput({
   };
 
   const baseClasses = `w-full px-2 py-2 rounded-lg bg-solarized-base3 text-solarized-base02 
-    border transition-colors font-mono text-center
-    placeholder:text-gray-400 placeholder:font-mono
+    border transition-colors font-bold text-center
+    placeholder:text-gray-400 placeholder:font-normal
     focus:outline-none focus:ring-2 focus:ring-solarized-blue focus:border-transparent`;
 
   const stateClasses = isInvalid
