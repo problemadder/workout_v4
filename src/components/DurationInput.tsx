@@ -69,14 +69,14 @@ export default function DurationInput({
     setIsInvalid(false);
   };
 
-  const baseClasses = `w-full px-2 py-2 rounded-lg bg-base01 text-base1 
-    border-2 transition-colors font-mono text-center
-    placeholder:text-base00 placeholder:font-mono
-    focus:outline-none focus:ring-2 focus:ring-cyan focus:border-cyan`;
+  const baseClasses = `w-full px-2 py-2 rounded-lg bg-solarized-base3 text-solarized-base02 
+    border transition-colors font-mono text-center
+    placeholder:text-gray-400 placeholder:font-mono
+    focus:outline-none focus:ring-2 focus:ring-solarized-blue focus:border-transparent`;
 
   const stateClasses = isInvalid
-    ? 'border-red'
-    : 'border-base02 hover:border-base03';
+    ? 'border-solarized-red'
+    : 'border-solarized-base1 hover:border-solarized-base0';
 
   const disabledClasses = disabled
     ? 'opacity-50 cursor-not-allowed'

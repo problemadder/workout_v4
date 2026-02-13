@@ -580,7 +580,7 @@ export function WorkoutLogger({
                         value={set.duration || ''}
                         onChange={(value) => updateSet(originalIndex, 'duration', value)}
                         placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                        className="text-lg font-bold placeholder:text-[10px] placeholder:font-normal"
+                        className="text-xl font-bold placeholder:text-xs placeholder:font-normal"
                       />
                     ) : (
                       <input
@@ -589,7 +589,7 @@ export function WorkoutLogger({
                         value={set.reps || ''}
                         onChange={(e) => updateSet(originalIndex, 'reps', parseFloat(e.target.value) || 0)}
                         placeholder={getPlaceholderText(set.exerciseId, setPosition)}
-                        className="w-full p-2 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-lg font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-xs text-center"
+                        className="w-full p-2 border border-solarized-base1 rounded-lg focus:ring-2 focus:ring-solarized-blue focus:border-transparent text-xl font-bold bg-solarized-base3 text-solarized-base02 placeholder-gray-400 placeholder:text-xs text-center"
                         min="0"
                         onKeyDown={(e) => {
                           if (e.key === 'ArrowUp') {
