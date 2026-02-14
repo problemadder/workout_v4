@@ -989,6 +989,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
             selectedExercise={selectedExercise || null}
             exerciseComparison={exerciseComparison}
             consistencyData={consistencyData}
+            maxChartData={maxChartData}
           />
         </div>
       </div>

@@ -2,7 +2,8 @@ import {
     Calendar,
     BarChart3,
     Activity,
-    Dumbbell
+    Dumbbell,
+    TrendingUp
 } from 'lucide-react';
 import { Exercise } from '../types';
 import { CategoryConsistencyStats, CategoryConsistencyTrend } from '../types/statsTypes';
@@ -18,14 +19,15 @@ interface StatsSummaryCardProps {
     categoryConsistencyStats: Record<string, CategoryConsistencyStats>;
     consistencyTrends: Record<string, CategoryConsistencyTrend>;
     categories: Array<{ value: string; label: string; color: string; bgColor: string }>;
-    maxSets: number; // For weekly chart scaling
-    maxYearlyPercentage: number; // For yearly chart scaling
+    maxSets: number;
+    maxYearlyPercentage: number;
     selectedExercise?: Exercise | null;
     exerciseComparison?: {
         currentYear: { totalDisplay: string | number; workoutDays: number; dailyAverage: string | number; perDay: string | number };
         lastYear: { totalDisplay: string | number; workoutDays: number; dailyAverage: string | number; perDay: string | number };
     } | null;
     consistencyData?: ConsistencyData | null;
+    maxChartData?: Array<{ date: Date; maxValue: number; maxDisplay: string; setPosition: number }>;
 }
 
 export function StatsSummaryCard({
@@ -42,9 +44,26 @@ export function StatsSummaryCard({
     maxYearlyPercentage,
     selectedExercise,
     exerciseComparison,
-    consistencyData
+    consistencyData,
+    maxChartData
 }: StatsSummaryCardProps) {
     const isTimeExercise = selectedExercise?.exerciseType === 'time';
+
+    // Helper to get points for SVG line chart
+    const getChartPoints = () => {
+        if (!maxChartData || maxChartData.length < 2) return '';
+        const maxVal = Math.max(...maxChartData.map(d => d.maxValue));
+        const width = 500; // SVG width
+        const height = 150; // SVG height
+        const padding = 20;
+
+        return maxChartData.map((d, i) => {
+            const x = (i / (maxChartData.length - 1)) * (width - 2 * padding) + padding;
+            const y = height - ((d.maxValue / maxVal) * (height - 2 * padding)) - padding;
+            return `${x},${y}`;
+        }).join(' ');
+    };
+
     return (
         <div id="stats-summary-card" className="bg-solarized-base3 p-8 w-[600px] mx-auto space-y-8 border border-solarized-base1">
             {/* Header */}
@@ -158,7 +177,53 @@ export function StatsSummaryCard({
                 </div>
             )}
 
-            {/* Yearly Training */}{" "}
+            {/* Max Over Time Chart */}
+            {selectedExercise && maxChartData && maxChartData.length > 1 && (
+                <div>
+                    <h3 className="text-lg font-semibold text-solarized-base02 mb-4 flex items-center gap-2">
+                        <TrendingUp size={20} className="text-solarized-magenta" />
+                        {isTimeExercise ? 'Max Duration Over Time' : 'Max Reps Over Time'}
+                    </h3>
+                    <div className="bg-solarized-base2 p-4 rounded-xl border border-solarized-base1">
+                        <div className="relative h-[200px] w-full flex items-end justify-between px-2">
+                            <svg className="absolute inset-0 w-full h-full overflow-visible">
+                                <polyline
+                                    fill="none"
+                                    stroke="#d33682" // solarized-magenta
+                                    strokeWidth="3"
+                                    points={getChartPoints()}
+                                />
+                                {maxChartData.map((d, i) => {
+                                    const maxVal = Math.max(...maxChartData.map(d => d.maxValue));
+                                    const width = 500;
+                                    const height = 150;
+                                    const padding = 20;
+                                    const x = (i / (maxChartData.length - 1)) * (width - 2 * padding) + padding;
+                                    const y = height - ((d.maxValue / maxVal) * (height - 2 * padding)) - padding;
+
+                                    return (
+                                        <g key={i}>
+                                            <circle cx={x} cy={y} r="4" fill="#d33682" />
+                                            {/* Show label for first, last, and every 3rd point to avoid crowding */}
+                                            {(i === 0 || i === maxChartData.length - 1 || i % 3 === 0) && (
+                                                <text x={x} y={y - 10} textAnchor="middle" fontSize="10" fill="#657b83">
+                                                    {d.maxDisplay}
+                                                </text>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </svg>
+                        </div>
+                        <div className="flex justify-between mt-2 text-xs text-solarized-base01">
+                            <span>{maxChartData[0]?.date.toLocaleDateString()}</span>
+                            <span>{maxChartData[maxChartData.length - 1]?.date.toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Yearly Training */}
             <div>
                 <h3 className="text-lg font-semibold text-solarized-base02 mb-4 flex items-center gap-2">
                     <BarChart3 size={20} className="text-solarized-green" />
