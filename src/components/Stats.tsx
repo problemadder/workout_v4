@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart, Search, X, Clock, Repeat, Timer, Hash } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import html2canvas from 'html2canvas';
+import { TrendingUp, Target, Calendar, Percent, Dumbbell, BarChart3, Activity, LineChart, Search, X, Clock, Repeat, Timer, Hash, Share2 } from 'lucide-react';
 import { Workout, Exercise } from '../types';
 import { formatShortDate } from '../utils/dateUtils';
 import { formatSingleDecimal } from '../utils/formatUtils';
@@ -8,30 +9,17 @@ import { PieChart } from './PieChart';
 import { BarChart } from './BarChart';
 import { ExerciseConsistencyChart } from './ExerciseConsistencyChart';
 import { ExerciseConsistencyComparison } from './ExerciseConsistencyComparison';
+import { StatsSummaryCard } from './StatsSummaryCard';
 import { useExerciseConsistencyData, useExerciseYearComparison, PeriodType } from '../hooks/useExerciseConsistencyData';
+import { CategoryConsistencyStats, CategoryConsistencyTrend, ConsistencyPattern } from '../types/statsTypes';
 
 interface StatsProps {
   workouts: Workout[];
   exercises: Exercise[];
 }
 
-type ConsistencyPattern = 'Stable' | 'Variable' | 'Irregular';
-
-type CategoryConsistencyStats = {
-  medianRestDays: number;
-  workoutCount: number;
-  pattern: ConsistencyPattern;
-  range: string;
-};
-
-type CategoryConsistencyTrend = {
-  recentMedian: number;
-  pastMedian: number;
-  trend: 'improving' | 'declining' | 'stable' | 'insufficient';
-  trendPercentage: number;
-};
-
 export function Stats({ workouts, exercises }: StatsProps) {
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -960,8 +948,47 @@ export function Stats({ workouts, exercises }: StatsProps) {
   const maxChartPercentage = Math.max(maxThisYearPercentage, maxLastYearPercentage, 100);
   const maxYearlyPercentage = Math.max(...yearlyTrainingData.map(d => d.percentage), 100);
 
+  const handleShare = async () => {
+    if (summaryRef.current) {
+      try {
+        const canvas = await html2canvas(summaryRef.current, {
+          scale: 2, // Higher resolution
+          backgroundColor: '#fdf6e3', // solarized-base3
+          logging: false,
+          width: 600, // Fixed width for consistent capture
+          windowWidth: 1200 // Ensure layout is desktop-like for capture
+        });
+
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `workout-stats-${new Date().toISOString().split('T')[0]}.png`;
+        link.click();
+      } catch (error) {
+        console.error('Error sharing stats:', error);
+      }
+    }
+  };
+
   return (
-    <div className="p-6 pb-24 space-y-6 bg-solarized-base3 min-h-screen">
+    <div className="p-6 pb-24 space-y-6 bg-solarized-base3 min-h-screen relative">
+      <div className="absolute left-[-9999px] top-0 pointer-events-none">
+        <div ref={summaryRef}>
+          <StatsSummaryCard
+            date={new Date()}
+            weekPercentage={weekPercentage}
+            monthPercentage={monthPercentage}
+            yearPercentage={yearPercentage}
+            weeklyData={weeklyData}
+            yearlyTrainingData={yearlyTrainingData}
+            categoryConsistencyStats={categoryConsistencyStats}
+            consistencyTrends={consistencyTrends}
+            categories={categories}
+            maxSets={maxSets}
+            maxYearlyPercentage={maxYearlyPercentage}
+          />
+        </div>
+      </div>
       {/* Training Percentages */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-gradient-to-br from-solarized-blue to-solarized-cyan text-solarized-base3 p-3 rounded-xl shadow-lg">
@@ -1599,6 +1626,14 @@ export function Stats({ workouts, exercises }: StatsProps) {
           <p className="text-solarized-base01 text-center py-4">No exercise data for {selectedYear}</p>
         )}
       </div>
+
+      <button
+        onClick={handleShare}
+        className="w-full mt-6 bg-solarized-blue text-solarized-base3 border-none py-3 px-4 rounded-lg cursor-pointer font-semibold transition-all duration-200 ease-in-out hover:bg-solarized-blue/90 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 shadow-lg mb-8"
+      >
+        <Share2 size={20} />
+        Share Summary
+      </button>
     </div>
   );
 }
