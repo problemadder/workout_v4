@@ -1242,10 +1242,10 @@ export function Stats({ workouts, exercises }: StatsProps) {
                   <span className="text-solarized-base01">{isTimeExercise ? 'Total Time: ' : 'Total Reps: '}</span>
                   <span className={`font-medium ${exerciseComparison.currentYear.totalValue >= exerciseComparison.lastYear.totalValue ? 'text-solarized-green' : 'text-solarized-red'
                     }`}>
-                    {exerciseComparison.currentYear.totalValue >= exerciseComparison.lastYear.totalValue ? '+' : ''}
+                    {exerciseComparison.currentYear.totalValue >= exerciseComparison.lastYear.totalValue ? '+' : '-'}
                     {isTimeExercise
-                      ? formatDurationDisplay(exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue)
-                      : exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue
+                      ? formatDurationDisplay(Math.abs(exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue))
+                      : Math.abs(exerciseComparison.currentYear.totalValue - exerciseComparison.lastYear.totalValue)
                     }
                   </span>
                 </div>
