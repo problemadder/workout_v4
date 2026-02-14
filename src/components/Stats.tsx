@@ -986,6 +986,9 @@ export function Stats({ workouts, exercises }: StatsProps) {
             categories={categories}
             maxSets={maxSets}
             maxYearlyPercentage={maxYearlyPercentage}
+            selectedExercise={selectedExercise || null}
+            exerciseComparison={exerciseComparison}
+            consistencyData={consistencyData}
           />
         </div>
       </div>

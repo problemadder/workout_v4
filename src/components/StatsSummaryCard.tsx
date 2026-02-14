@@ -1,9 +1,12 @@
 import {
     Calendar,
     BarChart3,
-    Activity
+    Activity,
+    Dumbbell
 } from 'lucide-react';
+import { Exercise } from '../types';
 import { CategoryConsistencyStats, CategoryConsistencyTrend } from '../types/statsTypes';
+import { ConsistencyData } from '../hooks/useExerciseConsistencyData';
 
 interface StatsSummaryCardProps {
     date: Date;
@@ -17,6 +20,12 @@ interface StatsSummaryCardProps {
     categories: Array<{ value: string; label: string; color: string; bgColor: string }>;
     maxSets: number; // For weekly chart scaling
     maxYearlyPercentage: number; // For yearly chart scaling
+    selectedExercise?: Exercise | null;
+    exerciseComparison?: {
+        currentYear: { totalDisplay: string | number; workoutDays: number; dailyAverage: string | number; perDay: string | number };
+        lastYear: { totalDisplay: string | number; workoutDays: number; dailyAverage: string | number; perDay: string | number };
+    } | null;
+    consistencyData?: ConsistencyData | null;
 }
 
 export function StatsSummaryCard({
@@ -27,10 +36,15 @@ export function StatsSummaryCard({
     weeklyData,
     yearlyTrainingData,
     categoryConsistencyStats,
+    consistencyTrends,
     categories,
     maxSets,
-    maxYearlyPercentage
+    maxYearlyPercentage,
+    selectedExercise,
+    exerciseComparison,
+    consistencyData
 }: StatsSummaryCardProps) {
+    const isTimeExercise = selectedExercise?.exerciseType === 'time';
     return (
         <div id="stats-summary-card" className="bg-solarized-base3 p-8 w-[600px] mx-auto space-y-8 border border-solarized-base1">
             {/* Header */}
@@ -55,7 +69,96 @@ export function StatsSummaryCard({
                 </div>
             </div>
 
-            {/* Yearly Training */}
+
+            {/* Exercise Details (if selected) */}
+            {selectedExercise && exerciseComparison && (
+                <div>
+                    <h3 className="text-lg font-semibold text-solarized-base02 mb-4 flex items-center gap-2">
+                        <Dumbbell size={20} className="text-solarized-violet" />
+                        Exercise Stats: {selectedExercise.name}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-solarized-blue/10 p-4 rounded-xl border border-solarized-blue/20">
+                            <div className="text-xs font-medium text-solarized-base01 uppercase mb-2">Current Year</div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-solarized-base01">Total</span>
+                                <span className="font-bold text-solarized-base02">{exerciseComparison.currentYear.totalDisplay}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-solarized-base01">Sessions</span>
+                                <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.workoutDays}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-solarized-base01">Avg/Session</span>
+                                <span className="font-medium text-solarized-base02">{exerciseComparison.currentYear.dailyAverage}</span>
+                            </div>
+                        </div>
+                        <div className="bg-solarized-violet/10 p-4 rounded-xl border border-solarized-violet/20">
+                            <div className="text-xs font-medium text-solarized-base01 uppercase mb-2">Last Year</div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-solarized-base01">Total</span>
+                                <span className="font-bold text-solarized-base02">{exerciseComparison.lastYear.totalDisplay}</span>
+                            </div>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm text-solarized-base01">Sessions</span>
+                                <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.workoutDays}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-solarized-base01">Avg/Session</span>
+                                <span className="font-medium text-solarized-base02">{exerciseComparison.lastYear.dailyAverage}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Exercise Consistency (Last 4 Months) */}
+            {selectedExercise && consistencyData && (
+                <div>
+                    <h3 className="text-lg font-semibold text-solarized-base02 mb-4 flex items-center gap-2">
+                        <Activity size={20} className="text-solarized-blue" />
+                        Last 4 Months Consistency
+                    </h3>
+                    <div className="bg-solarized-base2 p-4 rounded-xl border border-solarized-base1">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <div className="text-xs font-medium text-solarized-base01 uppercase mb-1">Pattern</div>
+                                <div className={`font-bold ${consistencyData.pattern === 'Stable' ? 'text-solarized-green' :
+                                    consistencyData.pattern === 'Variable' ? 'text-solarized-yellow' :
+                                        'text-solarized-red'
+                                    }`}>
+                                    {consistencyData.pattern}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-xs font-medium text-solarized-base01 uppercase mb-1">Median Rest</div>
+                                <div className="font-bold text-solarized-base02">{consistencyData.medianRestDays} days</div>
+                            </div>
+                            <div>
+                                <div className="text-xs font-medium text-solarized-base01 uppercase mb-1">Total Workouts</div>
+                                <div className="font-bold text-solarized-base02">{consistencyData.workoutCount}</div>
+                            </div>
+                            <div>
+                                <div className="text-xs font-medium text-solarized-base01 uppercase mb-1">Trend</div>
+                                {consistencyData.trend ? (
+                                    <div className={`font-bold ${consistencyData.trend.direction === 'improving' ? 'text-solarized-green' :
+                                        consistencyData.trend.direction === 'declining' ? 'text-solarized-red' :
+                                            'text-solarized-blue'
+                                        }`}>
+                                        {consistencyData.trend.direction.charAt(0).toUpperCase() + consistencyData.trend.direction.slice(1)}
+                                        {consistencyData.trend.percentageChange !== 0 && ` (${consistencyData.trend.percentageChange > 0 ? '+' : ''}${consistencyData.trend.percentageChange}%)`}
+                                    </div>
+                                ) : (
+                                    <div className="text-solarized-base01">-</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Yearly Training */}{" "}
             <div>
                 <h3 className="text-lg font-semibold text-solarized-base02 mb-4 flex items-center gap-2">
                     <BarChart3 size={20} className="text-solarized-green" />
@@ -124,8 +227,8 @@ export function StatsSummaryCard({
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="font-medium text-solarized-base02">{category.label}</span>
                                     <span className={`text-xs px-2 py-0.5 rounded-full ${stats.pattern === 'Stable' ? 'bg-solarized-green/20 text-solarized-green' :
-                                            stats.pattern === 'Variable' ? 'bg-solarized-yellow/20 text-solarized-yellow' :
-                                                'bg-solarized-red/20 text-solarized-red'
+                                        stats.pattern === 'Variable' ? 'bg-solarized-yellow/20 text-solarized-yellow' :
+                                            'bg-solarized-red/20 text-solarized-red'
                                         }`}>
                                         {stats.pattern}
                                     </span>
