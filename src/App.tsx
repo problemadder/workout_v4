@@ -407,26 +407,6 @@ function App() {
           />
         )}
 
-        {activeTab === 'exercises' && (
-          <ExerciseList
-            exercises={exercises}
-            onAddExercise={handleAddExercise}
-            onEditExercise={handleEditExercise}
-            onDeleteExercise={handleDeleteExercise}
-          />
-        )}
-
-        {activeTab === 'templates' && (
-          <TemplateManager
-            templates={templates}
-            exercises={exercises}
-            onAddTemplate={handleAddTemplate}
-            onEditTemplate={handleEditTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-            onUseTemplate={handleUseTemplate}
-          />
-        )}
-
         {activeTab === 'workout' && (
           <WorkoutLogger
             exercises={exercises}
@@ -458,6 +438,26 @@ function App() {
             onAddTarget={handleAddTarget}
             onEditTarget={handleEditTarget}
             onDeleteTarget={handleDeleteTarget}
+          />
+        )}
+
+        {activeTab === 'exercises' && (
+          <ExerciseList
+            exercises={exercises}
+            onAddExercise={handleAddExercise}
+            onEditExercise={handleEditExercise}
+            onDeleteExercise={handleDeleteExercise}
+          />
+        )}
+
+        {activeTab === 'templates' && (
+          <TemplateManager
+            templates={templates}
+            exercises={exercises}
+            onAddTemplate={handleAddTemplate}
+            onEditTemplate={handleEditTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
+            onUseTemplate={handleUseTemplate}
           />
         )}
 

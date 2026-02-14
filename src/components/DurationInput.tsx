@@ -95,6 +95,7 @@ export default function DurationInput({
         placeholder={placeholder}
         disabled={disabled}
         className={`${baseClasses} ${stateClasses} ${disabledClasses} ${className}`}
+        inputMode="numeric"
         maxLength={5}
       />
       {isInvalid && (

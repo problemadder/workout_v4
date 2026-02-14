@@ -607,6 +607,7 @@ export function WorkoutLogger({
                             updateSet(originalIndex, 'reps', Math.max(0, currentValue - 1));
                           }
                         }}
+                        inputMode="decimal"
                       />
                     )}
                   </div>

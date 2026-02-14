@@ -992,7 +992,40 @@ export function Stats({ workouts, exercises }: StatsProps) {
         </div>
       </div>
 
-      {/* Weekly Activity */}
+      {/* Yearly Training Percentages */}
+      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
+          <BarChart3 size={20} className="text-solarized-green" />
+          Training Days by Year
+        </h3>
+        {yearlyTrainingData.length > 0 ? (
+          <div className="space-y-3">
+            {yearlyTrainingData.map((data, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-12 text-sm text-solarized-base01 font-medium">
+                  {data.year}
+                  {data.isCurrent && <span className="text-xs block text-solarized-blue">current</span>}
+                </div>
+                <div className="flex-1 bg-solarized-base1/20 rounded-full h-8 relative overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${data.isCurrent ? 'bg-solarized-blue' : 'bg-solarized-green'
+                      }`}
+                    style={{ width: `${(data.percentage / maxYearlyPercentage) * 100}%` }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-solarized-base02">{data.percentage}%</span>
+                  </div>
+                </div>
+                <div className="w-24 text-xs text-solarized-base01 text-right">{data.workoutDays}/{data.totalDays} days</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-solarized-base01 text-center py-4">No workout data available</p>
+        )}
+      </div>
+
+      {/* Weekly Activity */}{" "}
       <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
           <Calendar size={20} className="text-solarized-blue" />
@@ -1225,38 +1258,7 @@ export function Stats({ workouts, exercises }: StatsProps) {
         )}
       </div>
 
-      {/* Yearly Training Percentages */}
-      <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-solarized-base02">
-          <BarChart3 size={20} className="text-solarized-green" />
-          Training Days by Year
-        </h3>
-        {yearlyTrainingData.length > 0 ? (
-          <div className="space-y-3">
-            {yearlyTrainingData.map((data, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <div className="w-12 text-sm text-solarized-base01 font-medium">
-                  {data.year}
-                  {data.isCurrent && <span className="text-xs block text-solarized-blue">current</span>}
-                </div>
-                <div className="flex-1 bg-solarized-base1/20 rounded-full h-8 relative overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${data.isCurrent ? 'bg-solarized-blue' : 'bg-solarized-green'
-                      }`}
-                    style={{ width: `${(data.percentage / maxYearlyPercentage) * 100}%` }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-bold text-solarized-base02">{data.percentage}%</span>
-                  </div>
-                </div>
-                <div className="w-24 text-xs text-solarized-base01 text-right">{data.workoutDays}/{data.totalDays} days</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-solarized-base01 text-center py-4">No workout data available</p>
-        )}
-      </div>
+
 
       {/* Max over time chart */}
       <div className="bg-solarized-base2 rounded-xl p-6 shadow-lg border border-solarized-base1">

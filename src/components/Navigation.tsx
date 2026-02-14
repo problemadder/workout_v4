@@ -9,11 +9,11 @@ interface NavigationProps {
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'workout', label: 'Workout', icon: Calendar },
+    { id: 'stats', label: 'Stats', icon: BarChart3 },
+    { id: 'targets', label: 'Targets', icon: Target },
     { id: 'exercises', label: 'Exercises', icon: Dumbbell },
     { id: 'templates', label: 'Templates', icon: BookOpen },
-    { id: 'workout', label: 'Workout', icon: Calendar },
-    { id: 'targets', label: 'Targets', icon: Target },
-    { id: 'stats', label: 'Stats', icon: BarChart3 },
     { id: 'import', label: 'Import', icon: Upload }
   ];
 
@@ -25,11 +25,10 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className={`flex flex-col items-center pt-0 pb-1 px-3 rounded-lg transition-all duration-200 ease-in-out min-w-0 flex-shrink-0 ${
-                activeTab === id
+              className={`flex flex-col items-center pt-0 pb-1 px-3 rounded-lg transition-all duration-200 ease-in-out min-w-0 flex-shrink-0 ${activeTab === id
                   ? 'text-solarized-blue bg-solarized-blue/20'
                   : 'text-solarized-base01 hover:text-solarized-base00 hover:bg-solarized-base2/50'
-              }`}
+                }`}
             >
               <Icon size={18} className="mb-0.5" />
               <span className="text-xs font-medium whitespace-nowrap">{label}</span>
